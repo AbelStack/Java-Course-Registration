@@ -28,7 +28,7 @@ cp src/main/resources/db.properties.template src/main/resources/db.properties
 ```
 Edit `db.properties`:
 ```properties
-db.url=jdbc:mysql://localhost:3306/course_reg_db
+db.url=jdbc:mysql://localhost:3306/javapro
 db.username=root
 db.password=YOUR_PASSWORD_HERE
 ```
