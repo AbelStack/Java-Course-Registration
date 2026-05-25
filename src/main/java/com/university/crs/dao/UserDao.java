@@ -36,6 +36,34 @@ public class UserDao {
         return null;
     }
 
+    /**
+     * Login with role-based authentication
+     */
+    public User loginWithRole(String username, String password, String role) throws SQLException {
+        String sql = "SELECT id, username, role, student_id, approved, full_name, email, department FROM users WHERE username = ? AND password = ? AND role = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+            stmt.setString(3, role);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int sid = rs.getInt("student_id");
+                    return new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("role"),
+                            rs.wasNull() ? null : sid,
+                            rs.getBoolean("approved"),
+                            rs.getString("full_name"),
+                            rs.getString("email"),
+                            rs.getString("department"));
+                }
+            }
+        }
+        return null;
+    }
+
     public void createAccount(String username, String password, String role, String fullName, String email, String department) throws SQLException {
         String sql = "INSERT INTO users (username, password, role, full_name, email, department, approved) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -46,8 +74,8 @@ public class UserDao {
             stmt.setString(4, fullName);
             stmt.setString(5, email);
             stmt.setString(6, department);
-            // Students need approval, admins are auto-approved
-            stmt.setBoolean(7, "ADMIN".equals(role));
+            // Students need approval, admins and department heads are auto-approved
+            stmt.setBoolean(7, "ADMIN".equals(role) || "DEPARTMENT_HEAD".equals(role));
             stmt.executeUpdate();
         }
     }

@@ -83,7 +83,7 @@ public class LoginScreen {
         title.setFont(FontLoader.getOutfitBold(36));
         title.setTextFill(ColorScheme.GRAY_900);
         
-        Label subtitle = new Label("Enter your email and password to sign in!");
+        Label subtitle = new Label("Enter your username, password, and role to sign in!");
         subtitle.setFont(FontLoader.getOutfit(14));
         subtitle.setTextFill(ColorScheme.GRAY_500);
         
@@ -120,32 +120,32 @@ public class LoginScreen {
         errorContent.getChildren().addAll(errorIcon, errorLabel);
         errorContainer.getChildren().add(errorContent);
 
-        // Email field
-        VBox emailGroup = new VBox(6);
-        Label emailLabel = new Label("Email");
-        emailLabel.setStyle(StyleConstants.label());
+        // Username field
+        VBox usernameGroup = new VBox(6);
+        Label usernameLabel = new Label("Username");
+        usernameLabel.setStyle(StyleConstants.label());
         
         Label requiredStar = new Label("*");
         requiredStar.setTextFill(ColorScheme.ERROR_500);
         
-        HBox emailLabelBox = new HBox(2);
-        emailLabelBox.getChildren().addAll(emailLabel, requiredStar);
+        HBox usernameLabelBox = new HBox(2);
+        usernameLabelBox.getChildren().addAll(usernameLabel, requiredStar);
         
-        TextField emailField = new TextField();
-        emailField.setPromptText("info@gmail.com");
-        emailField.setPrefHeight(StyleConstants.INPUT_HEIGHT);
-        emailField.setStyle(StyleConstants.input());
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Enter your username");
+        usernameField.setPrefHeight(StyleConstants.INPUT_HEIGHT);
+        usernameField.setStyle(StyleConstants.input());
         
         // Focus listener
-        emailField.focusedProperty().addListener((obs, oldVal, newVal) -> {
+        usernameField.focusedProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal) {
-                emailField.setStyle(StyleConstants.inputFocus());
+                usernameField.setStyle(StyleConstants.inputFocus());
             } else {
-                emailField.setStyle(StyleConstants.input());
+                usernameField.setStyle(StyleConstants.input());
             }
         });
         
-        emailGroup.getChildren().addAll(emailLabelBox, emailField);
+        usernameGroup.getChildren().addAll(usernameLabelBox, usernameField);
 
         // Password field
         VBox passwordGroup = new VBox(6);
@@ -221,6 +221,35 @@ public class LoginScreen {
         passwordContainer.getChildren().addAll(passwordField, passwordVisible, toggleButton);
         passwordGroup.getChildren().addAll(passwordLabelBox, passwordContainer);
 
+        // Role dropdown
+        VBox roleGroup = new VBox(6);
+        Label roleLabel = new Label("Role");
+        roleLabel.setStyle(StyleConstants.label());
+        
+        Label roleStar = new Label("*");
+        roleStar.setTextFill(ColorScheme.ERROR_500);
+        
+        HBox roleLabelBox = new HBox(2);
+        roleLabelBox.getChildren().addAll(roleLabel, roleStar);
+        
+        ComboBox<String> roleComboBox = new ComboBox<>();
+        roleComboBox.getItems().addAll("ADMIN", "DEPARTMENT_HEAD", "STUDENT");
+        roleComboBox.setPromptText("Select your role");
+        roleComboBox.setPrefHeight(StyleConstants.INPUT_HEIGHT);
+        roleComboBox.setMaxWidth(Double.MAX_VALUE);
+        roleComboBox.setStyle(StyleConstants.input());
+        
+        // Focus listener
+        roleComboBox.focusedProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal) {
+                roleComboBox.setStyle(StyleConstants.inputFocus());
+            } else {
+                roleComboBox.setStyle(StyleConstants.input());
+            }
+        });
+        
+        roleGroup.getChildren().addAll(roleLabelBox, roleComboBox);
+
         // Remember me & Forgot password
         HBox optionsRow = new HBox();
         optionsRow.setAlignment(Pos.CENTER_LEFT);
@@ -267,62 +296,32 @@ public class LoginScreen {
         signInButton.setOnMouseExited(e -> signInButton.setStyle(StyleConstants.buttonPrimary()));
         
         signInButton.setOnAction(e -> handleLogin(
-            emailField.getText().trim(),
+            usernameField.getText().trim(),
             passwordField.getText().trim(),
+            roleComboBox.getValue(),
             errorContainer,
             errorLabel
         ));
-
-        // Register link
-        HBox registerRow = new HBox(5);
-        registerRow.setAlignment(Pos.CENTER);
-        
-        Label noAccount = new Label("Don't have an account?");
-        noAccount.setFont(FontLoader.getOutfit(14));
-        noAccount.setTextFill(ColorScheme.GRAY_500);
-        
-        Hyperlink registerLink = new Hyperlink("Register here");
-        registerLink.setFont(FontLoader.getOutfit(14));
-        registerLink.setStyle(
-            "-fx-text-fill: " + ColorScheme.BRAND_500_HEX + "; " +
-            "-fx-border-color: transparent; " +
-            "-fx-padding: 0; " +
-            "-fx-underline: false;"
-        );
-        registerLink.setOnMouseEntered(e -> registerLink.setStyle(
-            "-fx-text-fill: " + ColorScheme.BRAND_600_HEX + "; " +
-            "-fx-border-color: transparent; " +
-            "-fx-padding: 0; " +
-            "-fx-underline: true;"
-        ));
-        registerLink.setOnMouseExited(e -> registerLink.setStyle(
-            "-fx-text-fill: " + ColorScheme.BRAND_500_HEX + "; " +
-            "-fx-border-color: transparent; " +
-            "-fx-padding: 0; " +
-            "-fx-underline: false;"
-        ));
-        registerLink.setOnAction(e -> new CreateAccountScreen(stage).show());
-        
-        registerRow.getChildren().addAll(noAccount, registerLink);
 
         // Add all to form
         formContainer.getChildren().addAll(
             header,
             errorContainer,
-            emailGroup,
+            usernameGroup,
             passwordGroup,
+            roleGroup,
             optionsRow,
-            signInButton,
-            registerRow
+            signInButton
         );
 
-        // Focus on email field
-        emailField.requestFocus();
+        // Focus on username field
+        usernameField.requestFocus();
         
         // Enter key navigation
-        emailField.setOnAction(e -> passwordField.requestFocus());
-        passwordField.setOnAction(e -> signInButton.fire());
-        passwordVisible.setOnAction(e -> signInButton.fire());
+        usernameField.setOnAction(e -> passwordField.requestFocus());
+        passwordField.setOnAction(e -> roleComboBox.requestFocus());
+        passwordVisible.setOnAction(e -> roleComboBox.requestFocus());
+        roleComboBox.setOnAction(e -> signInButton.fire());
 
         panel.getChildren().add(formContainer);
         return panel;
@@ -371,19 +370,14 @@ public class LoginScreen {
         return panel;
     }
 
-    private void handleLogin(String email, String password, VBox errorContainer, Label errorLabel) {
+    private void handleLogin(String username, String password, String role, VBox errorContainer, Label errorLabel) {
         // Hide error
         errorContainer.setVisible(false);
         errorContainer.setManaged(false);
 
-        // Validate email
-        if (email.isEmpty()) {
-            showError(errorContainer, errorLabel, "Please enter your email.");
-            return;
-        }
-
-        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            showError(errorContainer, errorLabel, "Please enter a valid email address.");
+        // Validate username
+        if (username.isEmpty()) {
+            showError(errorContainer, errorLabel, "Please enter your username.");
             return;
         }
 
@@ -398,23 +392,34 @@ public class LoginScreen {
             return;
         }
 
+        // Validate role
+        if (role == null || role.isEmpty()) {
+            showError(errorContainer, errorLabel, "Please select your role.");
+            return;
+        }
+
         // Attempt login
         try {
-            User user = userDao.login(email, password);
+            User user = userDao.loginWithRole(username, password, role);
             if (user != null) {
                 // Check if student account is approved
-                if (!user.isAdmin() && !user.isApproved()) {
+                if (user.isStudent() && !user.isApproved()) {
                     showError(errorContainer, errorLabel, "Your account is pending admin approval. Please wait for approval before logging in.");
                     return;
                 }
 
+                // Route to appropriate dashboard based on role
                 if (user.isAdmin()) {
                     new AdminDashboard(stage, user).show();
-                } else {
+                } else if (user.isDepartmentHead()) {
+                    new DepartmentHeadDashboard(stage, user).show();
+                } else if (user.isStudent()) {
                     new StudentPortal(stage, user).show();
+                } else {
+                    showError(errorContainer, errorLabel, "Unknown user role. Please contact administrator.");
                 }
             } else {
-                showError(errorContainer, errorLabel, "Invalid email or password. Please try again.");
+                showError(errorContainer, errorLabel, "Invalid username, password, or role. Please try again.");
             }
         } catch (SQLException e) {
             showError(errorContainer, errorLabel, "Database error: Unable to connect. Please try again later.");

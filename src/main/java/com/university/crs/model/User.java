@@ -1,7 +1,7 @@
 package com.university.crs.model;
 
 /**
- * Represents a logged-in user (ADMIN or STUDENT).
+ * Represents a logged-in user (ADMIN, STUDENT, or DEPARTMENT_HEAD).
  */
 public class User {
     private int id;
@@ -34,4 +34,6 @@ public class User {
     public String getEmail()        { return email; }
     public String getDepartment()   { return department; }
     public boolean isAdmin()        { return "ADMIN".equals(role); }
+    public boolean isStudent()      { return "STUDENT".equals(role); }
+    public boolean isDepartmentHead() { return "DEPARTMENT_HEAD".equals(role); }
 }
