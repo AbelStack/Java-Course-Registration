@@ -143,7 +143,7 @@ public class ProfilePage {
 
         Label labelText = new Label(label);
         labelText.setFont(FontLoader.getInter(14));
-        labelText.setTextFill(Color.rgb(120, 120, 120));
+        labelText.setTextFill(Color.BLACK);
         labelText.setPrefWidth(150);
 
         Label valueText = new Label(value);

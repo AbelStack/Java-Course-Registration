@@ -234,9 +234,8 @@ public class StyleConstants {
         return String.format(
             "-fx-font-size: %.0fpx; " +
             "-fx-font-weight: 500; " +
-            "-fx-text-fill: %s;",
-            FONT_SM,
-            ColorScheme.GRAY_700_HEX
+            "-fx-text-fill: black;",
+            FONT_SM
         );
     }
     
@@ -300,13 +299,12 @@ public class StyleConstants {
     public static String menuItem() {
         return String.format(
             "-fx-background-color: transparent; " +
-            "-fx-text-fill: %s; " +
+            "-fx-text-fill: black; " +
             "-fx-font-size: %.0fpx; " +
             "-fx-font-weight: 500; " +
             "-fx-background-radius: %.0fpx; " +
             "-fx-padding: 12; " +
             "-fx-cursor: hand;",
-            ColorScheme.GRAY_700_HEX,
             FONT_SM,
             RADIUS_MD
         );
@@ -318,14 +316,13 @@ public class StyleConstants {
     public static String menuItemActive() {
         return String.format(
             "-fx-background-color: %s; " +
-            "-fx-text-fill: %s; " +
+            "-fx-text-fill: black; " +
             "-fx-font-size: %.0fpx; " +
             "-fx-font-weight: 500; " +
             "-fx-background-radius: %.0fpx; " +
             "-fx-padding: 12; " +
             "-fx-cursor: hand;",
             ColorScheme.GRAY_100_HEX,
-            ColorScheme.GRAY_900_HEX,
             FONT_SM,
             RADIUS_MD
         );
@@ -337,14 +334,13 @@ public class StyleConstants {
     public static String menuItemHover() {
         return String.format(
             "-fx-background-color: %s; " +
-            "-fx-text-fill: %s; " +
+            "-fx-text-fill: black; " +
             "-fx-font-size: %.0fpx; " +
             "-fx-font-weight: 500; " +
             "-fx-background-radius: %.0fpx; " +
             "-fx-padding: 12; " +
             "-fx-cursor: hand;",
             ColorScheme.GRAY_100_HEX,
-            ColorScheme.GRAY_700_HEX,
             FONT_SM,
             RADIUS_MD
         );

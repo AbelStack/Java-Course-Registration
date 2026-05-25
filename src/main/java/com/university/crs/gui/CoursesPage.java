@@ -111,7 +111,7 @@ public class CoursesPage {
     private Label createHeaderLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(13));
-        label.setTextFill(Color.rgb(100, 100, 100));
+        label.setTextFill(Color.BLACK);
         label.setStyle("-fx-font-weight: 600;");
         label.setPrefWidth(width);
         return label;
@@ -210,7 +210,7 @@ public class CoursesPage {
     private Label createCellLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(14));
-        label.setTextFill(Color.rgb(60, 60, 60));
+        label.setTextFill(Color.BLACK);
         label.setPrefWidth(width);
         return label;
     }
@@ -232,23 +232,31 @@ public class CoursesPage {
         TextField titleField = new TextField();
         titleField.setPromptText("e.g., Introduction to Computer Science");
         
-        // Instructor dropdown
-        ComboBox<String> instructorCombo = new ComboBox<>();
-        instructorCombo.setPromptText("Select instructor (optional)");
-        instructorCombo.getItems().add("-- No Instructor --");
-        try {
-            List<Instructor> instructors = instructorDao.getAllInstructors();
-            for (Instructor instructor : instructors) {
-                instructorCombo.getItems().add(instructor.getId() + ": " + instructor.getName());
-            }
-        } catch (SQLException e) {
-            System.err.println("Error loading instructors: " + e.getMessage());
-        }
-        instructorCombo.setValue("-- No Instructor --");
-        instructorCombo.setPrefWidth(250);
-        
         TextField creditsField = new TextField();
         creditsField.setPromptText("e.g., 3");
+        
+        // Department dropdown
+        ComboBox<String> departmentCombo = new ComboBox<>();
+        departmentCombo.getItems().addAll("Computer Science", "Software Engineering", "Information Technology", "Electrical Engineering", "Mechanical Engineering");
+        departmentCombo.setPromptText("Select Department");
+        
+        // Year dropdown
+        ComboBox<String> yearCombo = new ComboBox<>();
+        yearCombo.getItems().addAll("2024", "2025", "2026", "2027", "2028");
+        yearCombo.setPromptText("Select Year");
+        
+        // Semester dropdown
+        ComboBox<String> semesterCombo = new ComboBox<>();
+        semesterCombo.getItems().addAll("Fall", "Spring", "Summer");
+        semesterCombo.setPromptText("Select Semester");
+        
+        // Prerequisite field (optional)
+        TextField prerequisiteField = new TextField();
+        prerequisiteField.setPromptText("e.g., CS100 (optional)");
+        
+        // Instructor name field (optional, no instructor account)
+        TextField instructorNameField = new TextField();
+        instructorNameField.setPromptText("e.g., Dr. John Smith (optional)");
         
         TextField capacityField = new TextField();
         capacityField.setPromptText("e.g., 30");
@@ -257,12 +265,20 @@ public class CoursesPage {
         grid.add(codeField, 1, 0);
         grid.add(new Label("Course Title:"), 0, 1);
         grid.add(titleField, 1, 1);
-        grid.add(new Label("Instructor:"), 0, 2);
-        grid.add(instructorCombo, 1, 2);
-        grid.add(new Label("Credits:"), 0, 3);
-        grid.add(creditsField, 1, 3);
-        grid.add(new Label("Capacity:"), 0, 4);
-        grid.add(capacityField, 1, 4);
+        grid.add(new Label("Credit Hours:"), 0, 2);
+        grid.add(creditsField, 1, 2);
+        grid.add(new Label("Department:"), 0, 3);
+        grid.add(departmentCombo, 1, 3);
+        grid.add(new Label("Year:"), 0, 4);
+        grid.add(yearCombo, 1, 4);
+        grid.add(new Label("Semester:"), 0, 5);
+        grid.add(semesterCombo, 1, 5);
+        grid.add(new Label("Prerequisite:"), 0, 6);
+        grid.add(prerequisiteField, 1, 6);
+        grid.add(new Label("Instructor Name:"), 0, 7);
+        grid.add(instructorNameField, 1, 7);
+        grid.add(new Label("Capacity:"), 0, 8);
+        grid.add(capacityField, 1, 8);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -283,21 +299,28 @@ public class CoursesPage {
                     return;
                 }
                 
-                // Get instructor ID from dropdown
-                Integer instructorId = null;
-                String selectedInstructor = instructorCombo.getValue();
-                if (selectedInstructor != null && !selectedInstructor.equals("-- No Instructor --")) {
-                    try {
-                        instructorId = Integer.parseInt(selectedInstructor.split(":")[0]);
-                    } catch (Exception e) {
-                        // Invalid format, leave as null
-                    }
-                }
-                
                 // Validate credits
                 ValidationResult creditsResult = ValidationUtil.validateCredits(creditsField.getText());
                 if (!creditsResult.isValid()) {
                     showAlert("Validation Error", creditsResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate department
+                if (departmentCombo.getValue() == null) {
+                    showAlert("Validation Error", "Please select a department.");
+                    return;
+                }
+                
+                // Validate year
+                if (yearCombo.getValue() == null) {
+                    showAlert("Validation Error", "Please select a year.");
+                    return;
+                }
+                
+                // Validate semester
+                if (semesterCombo.getValue() == null) {
+                    showAlert("Validation Error", "Please select a semester.");
                     return;
                 }
                 
@@ -312,10 +335,22 @@ public class CoursesPage {
                     String code = codeResult.getStringValue();
                     String title = titleResult.getStringValue();
                     int credits = creditsResult.getIntValue();
+                    String department = departmentCombo.getValue();
+                    String year = yearCombo.getValue();
+                    String semester = semesterCombo.getValue();
+                    String prerequisite = prerequisiteField.getText().trim();
+                    String instructorName = instructorNameField.getText().trim();
                     int capacity = capacityResult.getIntValue();
 
-                    courseDao.addCourse(code, title, instructorId, credits, capacity);
-                    showSuccessAlert("Success", "Course added successfully!");
+                    // TODO: Update courseDao.addCourse() to accept all these fields
+                    // For now, using the existing method with instructor ID as null
+                    courseDao.addCourse(code, title, null, credits, capacity);
+                    
+                    showSuccessAlert("Success", "Course added successfully!\n\nCourse: " + code + " - " + title + 
+                                   "\nDepartment: " + department + 
+                                   "\nYear: " + year + " | Semester: " + semester +
+                                   (prerequisite.isEmpty() ? "" : "\nPrerequisite: " + prerequisite) +
+                                   (instructorName.isEmpty() ? "" : "\nInstructor: " + instructorName));
                     refreshPage();
                 } catch (SQLException e) {
                     showAlert("Database Error", "Failed to add course: " + e.getMessage());

@@ -7,6 +7,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.sql.SQLException;
@@ -41,7 +42,7 @@ public class StudentApprovalsPage {
         
         Label subtitle = new Label("Review and approve student registration requests");
         subtitle.setFont(FontLoader.getOutfit(14));
-        subtitle.setTextFill(ColorScheme.GRAY_500);
+        subtitle.setTextFill(Color.BLACK);
         
         header.getChildren().addAll(heading, subtitle);
 
@@ -114,11 +115,11 @@ public class StudentApprovalsPage {
                 
                 Label emptyText = new Label("No pending approvals");
                 emptyText.setFont(FontLoader.getOutfit(14));
-                emptyText.setTextFill(ColorScheme.GRAY_400);
+                emptyText.setTextFill(Color.BLACK);
                 
                 Label emptySubtext = new Label("All student registrations have been reviewed");
                 emptySubtext.setFont(FontLoader.getOutfit(12));
-                emptySubtext.setTextFill(ColorScheme.GRAY_400);
+                emptySubtext.setTextFill(Color.BLACK);
                 
                 emptyState.getChildren().addAll(emptyIcon, emptyText, emptySubtext);
                 pendingList.getChildren().add(emptyState);
@@ -175,15 +176,15 @@ public class StudentApprovalsPage {
         
         Label usernameLabel = new Label("Username: " + student.getUsername());
         usernameLabel.setFont(FontLoader.getOutfit(14));
-        usernameLabel.setTextFill(ColorScheme.GRAY_600);
+        usernameLabel.setTextFill(Color.BLACK);
         
         Label emailLabel = new Label("Email: " + (student.getEmail() != null ? student.getEmail() : "N/A"));
         emailLabel.setFont(FontLoader.getOutfit(14));
-        emailLabel.setTextFill(ColorScheme.GRAY_600);
+        emailLabel.setTextFill(Color.BLACK);
         
         Label deptLabel = new Label("Department: " + (student.getDepartment() != null ? student.getDepartment() : "N/A"));
         deptLabel.setFont(FontLoader.getOutfit(14));
-        deptLabel.setTextFill(ColorScheme.GRAY_600);
+        deptLabel.setTextFill(Color.BLACK);
         
         infoSection.getChildren().addAll(nameLabel, usernameLabel, emailLabel, deptLabel);
 

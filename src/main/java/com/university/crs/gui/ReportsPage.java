@@ -76,13 +76,13 @@ public class ReportsPage {
         
         Label iconLabel = new Label(icon);
         iconLabel.setFont(FontLoader.getInter(26));
-        iconLabel.setTextFill(Color.WHITE);
+        // Don't set text fill for emoji icons - they should display in their natural colors
         iconContainer.getChildren().add(iconLabel);
 
         // Title
         Label titleLabel = new Label(title);
         titleLabel.setFont(FontLoader.getInter(13));
-        titleLabel.setTextFill(Color.rgb(120, 120, 120));
+        titleLabel.setTextFill(Color.BLACK);
 
         // Value
         Label valueLabel = new Label(value);
@@ -133,7 +133,7 @@ public class ReportsPage {
     private Label createHeaderLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(13));
-        label.setTextFill(Color.rgb(100, 100, 100));
+        label.setTextFill(Color.BLACK);
         label.setStyle("-fx-font-weight: 600;");
         label.setPrefWidth(width);
         return label;
@@ -145,7 +145,7 @@ public class ReportsPage {
             if (summary.isEmpty()) {
                 Label emptyLabel = new Label("No enrollment data available");
                 emptyLabel.setFont(FontLoader.getInter(14));
-                emptyLabel.setTextFill(Color.rgb(120, 120, 120));
+                emptyLabel.setTextFill(Color.BLACK);
                 emptyLabel.setPadding(new Insets(20, 0, 0, 0));
                 rows.getChildren().add(emptyLabel);
             } else {
@@ -252,7 +252,7 @@ public class ReportsPage {
     private Label createCellLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(14));
-        label.setTextFill(Color.rgb(60, 60, 60));
+        label.setTextFill(Color.BLACK);
         label.setPrefWidth(width);
         return label;
     }

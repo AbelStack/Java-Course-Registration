@@ -107,7 +107,7 @@ public class InstructorsPage {
     private Label createHeaderLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(13));
-        label.setTextFill(Color.rgb(100, 100, 100));
+        label.setTextFill(Color.BLACK);
         label.setStyle("-fx-font-weight: 600;");
         label.setPrefWidth(width);
         return label;
@@ -205,7 +205,7 @@ public class InstructorsPage {
     private Label createCellLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(14));
-        label.setTextFill(Color.rgb(60, 60, 60));
+        label.setTextFill(Color.BLACK);
         label.setPrefWidth(width);
         return label;
     }

@@ -36,10 +36,29 @@ public class StudentsPage {
         page.setPadding(new Insets(40, 50, 40, 50));
         page.setStyle("-fx-background-color: " + ColorScheme.BACKGROUND_HEX + ";");
 
-        // Header with title
+        // Header with title and Add button
+        HBox header = new HBox();
+        header.setAlignment(Pos.CENTER_LEFT);
+        HBox.setHgrow(header, Priority.ALWAYS);
+        
         Label heading = new Label("Manage Students");
         heading.setFont(FontLoader.getPoppinsBold(28));
         heading.setTextFill(ColorScheme.DARK_TEXT);
+        
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        
+        Button addStudentBtn = new Button("+ Add Student");
+        addStudentBtn.setFont(FontLoader.getPoppinsBold(14));
+        addStudentBtn.setTextFill(Color.WHITE);
+        addStudentBtn.setPrefHeight(45);
+        addStudentBtn.setPrefWidth(170);
+        addStudentBtn.setStyle(StyleConstants.buttonPrimary());
+        addStudentBtn.setOnMouseEntered(e -> addStudentBtn.setStyle(StyleConstants.buttonPrimaryHover()));
+        addStudentBtn.setOnMouseExited(e -> addStudentBtn.setStyle(StyleConstants.buttonPrimary()));
+        addStudentBtn.setOnAction(e -> showAddStudentDialog());
+        
+        header.getChildren().addAll(heading, spacer, addStudentBtn);
 
         // Search bar
         HBox searchBox = buildSearchBar();
@@ -47,7 +66,7 @@ public class StudentsPage {
         // Table container
         VBox tableContainer = buildTableContainer();
 
-        page.getChildren().addAll(heading, searchBox, tableContainer);
+        page.getChildren().addAll(header, searchBox, tableContainer);
         
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.setFitToWidth(true);
@@ -129,7 +148,7 @@ public class StudentsPage {
     private Label createHeaderLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(13));
-        label.setTextFill(Color.rgb(100, 100, 100));
+        label.setTextFill(Color.BLACK);
         label.setStyle("-fx-font-weight: 600;");
         label.setPrefWidth(width);
         return label;
@@ -243,7 +262,7 @@ public class StudentsPage {
     private Label createCellLabel(String text, double width) {
         Label label = new Label(text);
         label.setFont(FontLoader.getInter(14));
-        label.setTextFill(Color.rgb(60, 60, 60));
+        label.setTextFill(Color.BLACK);
         label.setPrefWidth(width);
         return label;
     }
@@ -319,5 +338,133 @@ public class StudentsPage {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    private void showAddStudentDialog() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Add Student");
+        dialog.setHeaderText("Create a new student account");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(20));
+
+        TextField nameField = new TextField();
+        nameField.setPromptText("e.g., John Doe");
+        
+        TextField emailField = new TextField();
+        emailField.setPromptText("e.g., john.doe@university.edu");
+        
+        ComboBox<String> departmentCombo = new ComboBox<>();
+        departmentCombo.getItems().addAll("Computer Science", "Software Engineering", "Information Technology", "Electrical Engineering", "Mechanical Engineering");
+        departmentCombo.setPromptText("Select Department");
+        
+        ComboBox<String> yearCombo = new ComboBox<>();
+        yearCombo.getItems().addAll("2024", "2025", "2026", "2027");
+        yearCombo.setPromptText("Select Year");
+        
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("Auto-generated (e.g., SWE-2026-001)");
+        usernameField.setEditable(false);
+        usernameField.setStyle("-fx-background-color: #f0f0f0;");
+        
+        PasswordField passwordField = new PasswordField();
+        passwordField.setPromptText("Initial password");
+
+        grid.add(new Label("Full Name:"), 0, 0);
+        grid.add(nameField, 1, 0);
+        grid.add(new Label("Email:"), 0, 1);
+        grid.add(emailField, 1, 1);
+        grid.add(new Label("Department:"), 0, 2);
+        grid.add(departmentCombo, 1, 2);
+        grid.add(new Label("Year:"), 0, 3);
+        grid.add(yearCombo, 1, 3);
+        grid.add(new Label("Student ID:"), 0, 4);
+        grid.add(usernameField, 1, 4);
+        grid.add(new Label("Password:"), 0, 5);
+        grid.add(passwordField, 1, 5);
+        
+        Label noteLabel = new Label("Note: Student ID will be auto-generated based on department and year");
+        noteLabel.setFont(FontLoader.getInter(11));
+        noteLabel.setTextFill(ColorScheme.GRAY_600);
+        noteLabel.setWrapText(true);
+        grid.add(noteLabel, 0, 6, 2, 1);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        // Auto-generate student ID when department and year are selected
+        departmentCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && yearCombo.getValue() != null) {
+                String deptCode = getDepartmentCode(newVal);
+                String year = yearCombo.getValue();
+                // TODO: Get next sequence number from database
+                usernameField.setText(deptCode + "-" + year + "-001");
+            }
+        });
+        
+        yearCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null && departmentCombo.getValue() != null) {
+                String deptCode = getDepartmentCode(departmentCombo.getValue());
+                // TODO: Get next sequence number from database
+                usernameField.setText(deptCode + "-" + newVal + "-001");
+            }
+        });
+
+        dialog.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                String name = nameField.getText().trim();
+                String email = emailField.getText().trim();
+                String department = departmentCombo.getValue();
+                String year = yearCombo.getValue();
+                String studentId = usernameField.getText().trim();
+                String password = passwordField.getText().trim();
+
+                if (name.isEmpty() || email.isEmpty() || department == null || year == null || password.isEmpty()) {
+                    showAlert("Error", "All fields are required.");
+                    return;
+                }
+
+                try {
+                    // Create user account for login
+                    com.university.crs.dao.UserDao userDao = new com.university.crs.dao.UserDao();
+                    
+                    // Check if username already exists
+                    if (userDao.usernameExists(studentId)) {
+                        showAlert("Error", "Student ID already exists. Please use a different ID.");
+                        return;
+                    }
+                    
+                    // Create user account (username = studentId, role = STUDENT, approved = true since admin creates it)
+                    userDao.createAccount(studentId, password, "STUDENT", name, email, department);
+                    
+                    // Also add to students table
+                    studentDao.addStudent(name, email);
+                    
+                    Alert success = new Alert(Alert.AlertType.INFORMATION);
+                    success.setTitle("Success");
+                    success.setHeaderText("Student created successfully!");
+                    success.setContentText("Student ID: " + studentId + "\nPassword: " + password + "\n\nPlease provide these credentials to the student.");
+                    success.showAndWait();
+                    
+                    refreshTableRows();
+                } catch (SQLException e) {
+                    showAlert("Database Error", "Failed to create student: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        });
+    }
+    
+    private String getDepartmentCode(String departmentName) {
+        switch (departmentName) {
+            case "Software Engineering": return "SWE";
+            case "Computer Science": return "CS";
+            case "Information Technology": return "IT";
+            case "Electrical Engineering": return "EE";
+            case "Mechanical Engineering": return "ME";
+            default: return "UNK";
+        }
     }
 }

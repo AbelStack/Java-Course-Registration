@@ -4,9 +4,12 @@ import com.university.crs.model.User;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.SVGPath;
 import javafx.stage.Stage;
 
@@ -137,7 +140,7 @@ public class DepartmentHeadDashboard {
         // Menu section header
         Label menuHeader = new Label("MENU");
         menuHeader.setFont(FontLoader.getOutfit(12));
-        menuHeader.setTextFill(ColorScheme.GRAY_400);
+        menuHeader.setTextFill(Color.BLACK);
         menuHeader.setPadding(new Insets(0, 0, StyleConstants.SPACING_MD, 0));
 
         // Navigation items - Department Head specific
@@ -180,8 +183,22 @@ public class DepartmentHeadDashboard {
 
         // Logout button at bottom
         Button logoutBtn = createNavButton("M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1", 
-            "Logout", false, () -> new LoginScreen(stage).show());
-        logoutBtn.setStyle(StyleConstants.menuItem() + "-fx-text-fill: " + ColorScheme.ERROR_500_HEX + ";");
+            "Logout", false, () -> {
+                // Confirm logout
+                Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+                confirm.setTitle("Logout");
+                confirm.setHeaderText("Are you sure you want to logout?");
+                confirm.setContentText("You will be returned to the login screen.");
+                confirm.showAndWait().ifPresent(response -> {
+                    if (response == ButtonType.OK) {
+                        new LoginScreen(stage).show();
+                    }
+                });
+            });
+        // Style logout button with red color
+        HBox logoutContent = (HBox) logoutBtn.getGraphic();
+        Label logoutLabel = (Label) logoutContent.getChildren().get(1);
+        logoutLabel.setTextFill(ColorScheme.ERROR_600);
 
         sidebar.getChildren().addAll(logoBox, roleBox, menuHeader, navBox, spacer, logoutBtn);
         
@@ -220,28 +237,28 @@ public class DepartmentHeadDashboard {
         // Apply initial style
         if (isActive) {
             btn.setStyle(StyleConstants.menuItemActive());
-            icon.setFill(ColorScheme.GRAY_900);
-            textLabel.setTextFill(ColorScheme.GRAY_900);
+            icon.setFill(Color.BLACK);
+            textLabel.setTextFill(Color.BLACK);
         } else {
             btn.setStyle(StyleConstants.menuItem());
-            icon.setFill(ColorScheme.GRAY_700);
-            textLabel.setTextFill(ColorScheme.GRAY_700);
+            icon.setFill(Color.BLACK);
+            textLabel.setTextFill(Color.BLACK);
         }
         
         // Hover effects
         btn.setOnMouseEntered(e -> {
             if (btn != activeButton) {
                 btn.setStyle(StyleConstants.menuItemHover());
-                icon.setFill(ColorScheme.GRAY_700);
-                textLabel.setTextFill(ColorScheme.GRAY_700);
+                icon.setFill(Color.BLACK);
+                textLabel.setTextFill(Color.BLACK);
             }
         });
         
         btn.setOnMouseExited(e -> {
             if (btn != activeButton) {
                 btn.setStyle(StyleConstants.menuItem());
-                icon.setFill(ColorScheme.GRAY_700);
-                textLabel.setTextFill(ColorScheme.GRAY_700);
+                icon.setFill(Color.BLACK);
+                textLabel.setTextFill(Color.BLACK);
             }
         });
         
@@ -254,15 +271,15 @@ public class DepartmentHeadDashboard {
                 StackPane prevIconContainer = (StackPane) prevContent.getChildren().get(0);
                 SVGPath prevIcon = (SVGPath) prevIconContainer.getChildren().get(0);
                 Label prevLabel = (Label) prevContent.getChildren().get(1);
-                prevIcon.setFill(ColorScheme.GRAY_700);
-                prevLabel.setTextFill(ColorScheme.GRAY_700);
+                prevIcon.setFill(Color.BLACK);
+                prevLabel.setTextFill(Color.BLACK);
             }
             
             // Activate current button
             activeButton = btn;
             btn.setStyle(StyleConstants.menuItemActive());
-            icon.setFill(ColorScheme.GRAY_900);
-            textLabel.setTextFill(ColorScheme.GRAY_900);
+            icon.setFill(Color.BLACK);
+            textLabel.setTextFill(Color.BLACK);
             
             action.run();
         });

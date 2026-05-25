@@ -11,6 +11,7 @@ import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 
 import java.sql.SQLException;
 
@@ -39,17 +40,18 @@ public class OverviewPage {
         
         Label subtitle = new Label("Overview of your course registration system");
         subtitle.setFont(FontLoader.getOutfit(14));
-        subtitle.setTextFill(ColorScheme.GRAY_500);
+        subtitle.setTextFill(Color.BLACK);
         
         header.getChildren().addAll(heading, subtitle);
 
         // Fetch stats
-        int pendingApprovals = 0, totalStudents = 0, totalCourses = 0, totalEnrollments = 0;
+        int totalStudents = 0, totalCourses = 0, totalEnrollments = 0, totalDepartments = 0;
         try {
-            pendingApprovals = new UserDao().getPendingStudents().size();
             totalStudents = new StudentDao().getAllStudents().size();
             totalCourses = new CourseDao().getAllCourses().size();
             totalEnrollments = new EnrollmentDao().getEnrollmentSummary().size();
+            // TODO: Add DepartmentDao to get total departments
+            totalDepartments = 0; // Placeholder
         } catch (SQLException ignored) {}
 
         // KPI Cards Grid
@@ -66,19 +68,17 @@ public class OverviewPage {
         }
 
         // Add KPI cards
-        cardsGrid.add(createKPICard("Pending Approvals", String.valueOf(pendingApprovals), 
-            pendingApprovals > 0 ? "Needs attention" : "All approved", 
-            pendingApprovals > 0 ? ColorScheme.ERROR_500 : ColorScheme.GRAY_400,
-            pendingApprovals > 0), 0, 0);
-        
         cardsGrid.add(createKPICard("Total Students", String.valueOf(totalStudents), 
-            "registered students", ColorScheme.GRAY_400, false), 1, 0);
+            "registered students", Color.BLACK, false), 0, 0);
+        
+        cardsGrid.add(createKPICard("Total Departments", String.valueOf(totalDepartments), 
+            "academic departments", Color.BLACK, false), 1, 0);
         
         cardsGrid.add(createKPICard("Total Courses", String.valueOf(totalCourses), 
-            "available courses", ColorScheme.GRAY_400, false), 2, 0);
+            "available courses", Color.BLACK, false), 2, 0);
         
         cardsGrid.add(createKPICard("Total Enrollments", String.valueOf(totalEnrollments), 
-            "course registrations", ColorScheme.GRAY_400, false), 3, 0);
+            "course registrations", Color.BLACK, false), 3, 0);
 
         // Recent Registrations Section
         VBox recentSection = buildRecentRegistrations();
@@ -111,7 +111,7 @@ public class OverviewPage {
         
         Label titleLabel = new Label(title);
         titleLabel.setFont(FontLoader.getOutfitMedium(14));
-        titleLabel.setTextFill(ColorScheme.GRAY_500);
+        titleLabel.setTextFill(Color.BLACK);
         
         headerRow.getChildren().add(titleLabel);
         
@@ -188,7 +188,7 @@ public class OverviewPage {
         
         Label descLabel = new Label("Manage courses, instructors, students, and enrollments from this dashboard.");
         descLabel.setFont(FontLoader.getOutfit(14));
-        descLabel.setTextFill(ColorScheme.GRAY_500);
+        descLabel.setTextFill(Color.BLACK);
         descLabel.setWrapText(true);
 
         // Quick actions grid
@@ -205,9 +205,9 @@ public class OverviewPage {
         }
 
         // Quick action cards
-        actionsGrid.add(createQuickActionCard("📚", "Manage Courses", "Add, edit, or remove courses"), 0, 0);
-        actionsGrid.add(createQuickActionCard("👥", "Manage Students", "View and manage student accounts"), 1, 0);
-        actionsGrid.add(createQuickActionCard("📊", "View Reports", "Generate enrollment and course reports"), 2, 0);
+        actionsGrid.add(createQuickActionCard("👥", "Manage Students", "Add, edit, and manage student accounts"), 0, 0);
+        actionsGrid.add(createQuickActionCard("🏢", "Manage Departments", "Add departments and assign heads"), 1, 0);
+        actionsGrid.add(createQuickActionCard("📚", "Manage Courses", "Add, edit, or remove courses"), 2, 0);
 
         infoCard.getChildren().addAll(welcomeLabel, descLabel, actionsGrid);
         section.getChildren().addAll(sectionHeader, infoCard);
@@ -239,7 +239,7 @@ public class OverviewPage {
         
         Label descLabel = new Label(description);
         descLabel.setFont(FontLoader.getOutfit(12));
-        descLabel.setTextFill(ColorScheme.GRAY_500);
+        descLabel.setTextFill(Color.BLACK);
         descLabel.setWrapText(true);
         
         card.getChildren().addAll(iconLabel, titleLabel, descLabel);
