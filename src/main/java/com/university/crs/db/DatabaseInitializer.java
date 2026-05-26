@@ -65,17 +65,8 @@ public class DatabaseInitializer {
             """);
             System.out.println("✓ Departments table created");
 
-            // Seed departments
-            System.out.println("Seeding departments...");
-            stmt.executeUpdate("""
-                INSERT IGNORE INTO departments (code, name) VALUES
-                ('CS', 'Computer Science'),
-                ('EE', 'Electrical Engineering'),
-                ('ME', 'Mechanical Engineering'),
-                ('MATH', 'Mathematics'),
-                ('PHYS', 'Physics')
-            """);
-            System.out.println("✓ 5 departments seeded");
+            // NOTE: Departments should be created by admin through the UI
+            // No departments are seeded here to allow full admin control
 
             // ================================================================
             // ACADEMIC YEARS TABLE
@@ -331,7 +322,7 @@ public class DatabaseInitializer {
             System.out.println();
             System.out.println("Tables Created:");
             System.out.println("  1. users (with default admin)");
-            System.out.println("  2. departments (5 departments seeded)");
+            System.out.println("  2. departments (admin creates through UI)");
             System.out.println("  3. academic_years (2024-2025 seeded)");
             System.out.println("  4. semesters (Semester I & Semester II seeded)");
             System.out.println("  5. registration_periods");
