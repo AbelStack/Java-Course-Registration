@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.stage.Stage;
 
 import java.sql.SQLException;
 
@@ -18,9 +19,22 @@ import java.sql.SQLException;
 public class OverviewPage {
 
     private final User user;
+    private final Stage stage;
+    private final Runnable navigateToStudents;
+    private final Runnable navigateToDepartments;
+    private final Runnable navigateToCourses;
 
     public OverviewPage(User user) {
+        this(user, null, null, null, null);
+    }
+    
+    public OverviewPage(User user, Stage stage, Runnable navigateToStudents, 
+                       Runnable navigateToDepartments, Runnable navigateToCourses) {
         this.user = user;
+        this.stage = stage;
+        this.navigateToStudents = navigateToStudents;
+        this.navigateToDepartments = navigateToDepartments;
+        this.navigateToCourses = navigateToCourses;
     }
 
     public Node build() {
@@ -217,9 +231,9 @@ public class OverviewPage {
         }
 
         // Quick action cards
-        actionsGrid.add(createQuickActionCard("👥", "Manage Students", "Add, edit, and manage student accounts"), 0, 0);
-        actionsGrid.add(createQuickActionCard("🏢", "Manage Departments", "Add departments and assign heads"), 1, 0);
-        actionsGrid.add(createQuickActionCard("📚", "Manage Courses", "Add, edit, or remove courses"), 2, 0);
+        actionsGrid.add(createQuickActionCard("👥", "Manage Students", "Add, edit, and manage student accounts", navigateToStudents), 0, 0);
+        actionsGrid.add(createQuickActionCard("🏢", "Manage Departments", "Add departments and assign heads", navigateToDepartments), 1, 0);
+        actionsGrid.add(createQuickActionCard("📚", "Manage Courses", "Add, edit, or remove courses", navigateToCourses), 2, 0);
 
         infoCard.getChildren().addAll(welcomeLabel, descLabel, actionsGrid);
         section.getChildren().addAll(sectionHeader, infoCard);
@@ -227,7 +241,7 @@ public class OverviewPage {
         return section;
     }
 
-    private VBox createQuickActionCard(String icon, String title, String description) {
+    private VBox createQuickActionCard(String icon, String title, String description, Runnable onClick) {
         VBox card = new VBox(StyleConstants.SPACING_SM);
         card.setAlignment(Pos.TOP_LEFT);
         card.setPadding(new Insets(StyleConstants.SPACING_LG));
@@ -256,29 +270,34 @@ public class OverviewPage {
         
         card.getChildren().addAll(iconLabel, titleLabel, descLabel);
         
-        // Hover effect
-        card.setOnMouseEntered(e -> card.setStyle(String.format(
-            "-fx-background-color: white; " +
-            "-fx-border-color: %s; " +
-            "-fx-border-radius: %.0fpx; " +
-            "-fx-background-radius: %.0fpx; " +
-            "-fx-cursor: hand; " +
-            "-fx-effect: %s;",
-            ColorScheme.BRAND_300_HEX,
-            StyleConstants.RADIUS_MD,
-            StyleConstants.RADIUS_MD,
-            StyleConstants.SHADOW_SM
-        )));
-        card.setOnMouseExited(e -> card.setStyle(String.format(
-            "-fx-background-color: %s; " +
-            "-fx-border-color: %s; " +
-            "-fx-border-radius: %.0fpx; " +
-            "-fx-background-radius: %.0fpx;",
-            ColorScheme.GRAY_50_HEX,
-            ColorScheme.GRAY_200_HEX,
-            StyleConstants.RADIUS_MD,
-            StyleConstants.RADIUS_MD
-        )));
+        // Make clickable if onClick is provided
+        if (onClick != null) {
+            card.setOnMouseClicked(e -> onClick.run());
+            
+            // Hover effect
+            card.setOnMouseEntered(e -> card.setStyle(String.format(
+                "-fx-background-color: white; " +
+                "-fx-border-color: %s; " +
+                "-fx-border-radius: %.0fpx; " +
+                "-fx-background-radius: %.0fpx; " +
+                "-fx-cursor: hand; " +
+                "-fx-effect: %s;",
+                ColorScheme.BRAND_300_HEX,
+                StyleConstants.RADIUS_MD,
+                StyleConstants.RADIUS_MD,
+                StyleConstants.SHADOW_SM
+            )));
+            card.setOnMouseExited(e -> card.setStyle(String.format(
+                "-fx-background-color: %s; " +
+                "-fx-border-color: %s; " +
+                "-fx-border-radius: %.0fpx; " +
+                "-fx-background-radius: %.0fpx;",
+                ColorScheme.GRAY_50_HEX,
+                ColorScheme.GRAY_200_HEX,
+                StyleConstants.RADIUS_MD,
+                StyleConstants.RADIUS_MD
+            )));
+        }
         
         return card;
     }

@@ -27,6 +27,9 @@ public class StudentsPage {
     private final StudentV2Dao studentDao = new StudentV2Dao();
     private List<StudentV2> allStudents;
     private VBox tableRowsContainer;
+    private ComboBox<String> departmentFilter;
+    private ComboBox<String> yearFilter;
+    private TextField searchField;
 
     public StudentsPage(Stage stage, User user) {
         this.stage = stage;
@@ -62,13 +65,16 @@ public class StudentsPage {
         
         header.getChildren().addAll(heading, spacer, addStudentBtn);
 
+        // Filters
+        HBox filters = buildFilters();
+
         // Search bar
         HBox searchBox = buildSearchBar();
 
         // Table container
         VBox tableContainer = buildTableContainer();
 
-        page.getChildren().addAll(header, searchBox, tableContainer);
+        page.getChildren().addAll(header, filters, searchBox, tableContainer);
         
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.setFitToWidth(true);
@@ -79,7 +85,132 @@ public class StudentsPage {
         return scrollPane;
     }
 
+    private HBox buildFilters() {
+        HBox filters = new HBox(15);
+        filters.setAlignment(Pos.CENTER_LEFT);
+        
+        // Department filter
+        Label deptLabel = new Label("Department:");
+        deptLabel.setFont(FontLoader.getOutfitMedium(14));
+        deptLabel.setTextFill(ColorScheme.DARK_TEXT);
+        
+        departmentFilter = new ComboBox<>();
+        departmentFilter.getItems().add("All Departments");
+        try {
+            com.university.crs.dao.DepartmentDao deptDao = new com.university.crs.dao.DepartmentDao();
+            List<com.university.crs.model.Department> departments = deptDao.getAllDepartments();
+            for (com.university.crs.model.Department dept : departments) {
+                departmentFilter.getItems().add(dept.getName());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading departments: " + e.getMessage());
+        }
+        departmentFilter.setValue("All Departments");
+        departmentFilter.setPrefWidth(200);
+        departmentFilter.setOnAction(e -> applyFilters());
+        
+        // Year filter
+        Label yearLabel = new Label("Year:");
+        yearLabel.setFont(FontLoader.getOutfitMedium(14));
+        yearLabel.setTextFill(ColorScheme.DARK_TEXT);
+        
+        yearFilter = new ComboBox<>();
+        yearFilter.getItems().addAll("All Years", "Year 1", "Year 2", "Year 3", "Year 4");
+        yearFilter.setValue("All Years");
+        yearFilter.setPrefWidth(150);
+        yearFilter.setOnAction(e -> applyFilters());
+        
+        filters.getChildren().addAll(deptLabel, departmentFilter, yearLabel, yearFilter);
+        
+        return filters;
+    }
+
     private HBox buildSearchBar() {
+        HBox searchBox = new HBox();
+        searchBox.setAlignment(Pos.CENTER_LEFT);
+        searchBox.setPadding(new Insets(15, 20, 15, 20));
+        searchBox.setStyle(
+            "-fx-background-color: white; " +
+            "-fx-background-radius: 12; " +
+            "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0, 0, 3);"
+        );
+
+        searchField = new TextField();
+        searchField.setPromptText("Search by name, email, or student ID...");
+        searchField.setPrefHeight(40);
+        searchField.setStyle(
+            "-fx-background-color: transparent; " +
+            "-fx-border-color: transparent; " +
+            "-fx-font-size: 14px; " +
+            "-fx-font-family: " + FontLoader.getInterFontFamily() + "; " +
+            "-fx-prompt-text-fill: #999999;"
+        );
+        HBox.setHgrow(searchField, Priority.ALWAYS);
+
+        // Search icon
+        Label searchIcon = new Label("🔍");
+        searchIcon.setFont(FontLoader.getInter(18));
+        searchIcon.setStyle("-fx-text-fill: #999999;");
+
+        searchBox.getChildren().addAll(searchField, searchIcon);
+
+        // Search functionality
+        searchField.textProperty().addListener((obs, oldVal, newVal) -> {
+            applyFilters();
+        });
+
+        return searchBox;
+    }
+    
+    private void applyFilters() {
+        String searchText = searchField != null ? searchField.getText().toLowerCase() : "";
+        String selectedDept = departmentFilter != null ? departmentFilter.getValue() : "All Departments";
+        String selectedYear = yearFilter != null ? yearFilter.getValue() : "All Years";
+        
+        if (allStudents == null) {
+            return;
+        }
+        
+        List<StudentV2> filtered = allStudents.stream()
+            .filter(student -> {
+                // Search filter
+                boolean matchesSearch = searchText.isEmpty() ||
+                    student.getName().toLowerCase().contains(searchText) ||
+                    student.getEmail().toLowerCase().contains(searchText) ||
+                    student.getStudentId().toLowerCase().contains(searchText);
+                
+                // Department filter
+                boolean matchesDept = selectedDept.equals("All Departments") ||
+                    student.getDepartmentName().equals(selectedDept);
+                
+                // Year filter
+                boolean matchesYear = selectedYear.equals("All Years") ||
+                    selectedYear.equals("Year " + student.getYearLevel());
+                
+                return matchesSearch && matchesDept && matchesYear;
+            })
+            .collect(Collectors.toList());
+        
+        displayStudents(filtered);
+    }
+    
+    private void displayStudents(List<StudentV2> students) {
+        tableRowsContainer.getChildren().clear();
+        
+        if (students.isEmpty()) {
+            Label emptyLabel = new Label("No students found matching the filters.");
+            emptyLabel.setFont(FontLoader.getInter(14));
+            emptyLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
+            emptyLabel.setPadding(new Insets(40));
+            tableRowsContainer.getChildren().add(emptyLabel);
+        } else {
+            for (StudentV2 student : students) {
+                tableRowsContainer.getChildren().add(createTableRow(student));
+            }
+        }
+    }
+
+    private HBox buildSearchBar_OLD() {
         HBox searchBox = new HBox();
         searchBox.setAlignment(Pos.CENTER_LEFT);
         searchBox.setPadding(new Insets(15, 20, 15, 20));
@@ -157,32 +288,17 @@ public class StudentsPage {
     }
 
     private void refreshTableRows() {
-        tableRowsContainer.getChildren().clear();
         try {
             allStudents = studentDao.getAllStudents();
-            for (StudentV2 student : allStudents) {
-                tableRowsContainer.getChildren().add(createTableRow(student));
-            }
+            applyFilters();
         } catch (SQLException e) {
             System.err.println("Error loading students: " + e.getMessage());
         }
     }
 
     private void filterStudents(String searchText) {
-        tableRowsContainer.getChildren().clear();
-        if (allStudents == null) return;
-
-        List<StudentV2> filtered = allStudents.stream()
-            .filter(s -> searchText == null || searchText.isEmpty() ||
-                s.getName().toLowerCase().contains(searchText.toLowerCase()) ||
-                s.getEmail().toLowerCase().contains(searchText.toLowerCase()) ||
-                s.getStudentId().toLowerCase().contains(searchText.toLowerCase()) ||
-                s.getDepartmentName().toLowerCase().contains(searchText.toLowerCase()))
-            .collect(Collectors.toList());
-
-        for (StudentV2 student : filtered) {
-            tableRowsContainer.getChildren().add(createTableRow(student));
-        }
+        // This method is now replaced by applyFilters()
+        applyFilters();
     }
 
     private HBox createTableRow(StudentV2 student) {
