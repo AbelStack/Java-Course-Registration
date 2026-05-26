@@ -1,8 +1,8 @@
 package com.university.crs.gui;
 
-import com.university.crs.dao.CourseDao;
-import com.university.crs.dao.EnrollmentDao;
-import com.university.crs.dao.StudentDao;
+import com.university.crs.dao.CourseV2Dao;
+import com.university.crs.dao.RegistrationDao;
+import com.university.crs.dao.StudentV2Dao;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -11,12 +11,18 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Reports page — enrollment summary with clean table layout.
  */
 public class ReportsPage {
+
+    private final StudentV2Dao studentDao = new StudentV2Dao();
+    private final CourseV2Dao courseDao = new CourseV2Dao();
+    private final RegistrationDao registrationDao = new RegistrationDao();
 
     public Node build() {
         VBox page = new VBox(30);
@@ -141,44 +147,46 @@ public class ReportsPage {
 
     private void loadEnrollmentData(VBox rows) {
         try {
-            List<String> summary = new EnrollmentDao().getEnrollmentSummary();
-            if (summary.isEmpty()) {
-                Label emptyLabel = new Label("No enrollment data available");
+            // Get all courses
+            var courses = courseDao.getAllCourses();
+            
+            if (courses.isEmpty()) {
+                Label emptyLabel = new Label("No courses available");
                 emptyLabel.setFont(FontLoader.getInter(14));
-                emptyLabel.setTextFill(Color.BLACK);
+                emptyLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
                 emptyLabel.setPadding(new Insets(20, 0, 0, 0));
                 rows.getChildren().add(emptyLabel);
-            } else {
-                for (String line : summary) {
-                    // Parse the enrollment summary line
-                    // Format: "CODE    TITLE    ENROLLED/CAPACITY"
-                    String[] parts = line.trim().split("\\s{2,}");
-                    if (parts.length >= 3) {
-                        String code = parts[0];
-                        String title = parts[1];
-                        String enrollmentInfo = parts[2];
-                        
-                        // Parse enrolled/capacity
-                        String[] enrollParts = enrollmentInfo.split("/");
-                        int enrolled = 0;
-                        int capacity = 0;
-                        if (enrollParts.length == 2) {
-                            try {
-                                enrolled = Integer.parseInt(enrollParts[0].trim());
-                                capacity = Integer.parseInt(enrollParts[1].trim());
-                            } catch (NumberFormatException ignored) {}
-                        }
-                        
-                        rows.getChildren().add(createEnrollmentRow(code, title, enrolled, capacity));
-                    }
+                return;
+            }
+            
+            // Get enrollment counts for each course
+            Map<Integer, Integer> enrollmentCounts = new HashMap<>();
+            var registrations = registrationDao.getAllRegistrations();
+            
+            for (var reg : registrations) {
+                if ("APPROVED".equals(reg.getStatus())) {
+                    enrollmentCounts.merge(reg.getCourseId(), 1, Integer::sum);
                 }
             }
+            
+            // Create rows for each course
+            for (var course : courses) {
+                int enrolled = enrollmentCounts.getOrDefault(course.getId(), 0);
+                rows.getChildren().add(createEnrollmentRow(
+                    course.getCourseCode(),
+                    course.getTitle(),
+                    enrolled,
+                    course.getCapacity()
+                ));
+            }
+            
         } catch (SQLException e) {
             Label errorLabel = new Label("Error loading enrollment data: " + e.getMessage());
             errorLabel.setFont(FontLoader.getInter(14));
-            errorLabel.setTextFill(ColorScheme.DANGER);
+            errorLabel.setTextFill(ColorScheme.ERROR_600);
             errorLabel.setPadding(new Insets(20, 0, 0, 0));
             rows.getChildren().add(errorLabel);
+            e.printStackTrace();
         }
     }
 
@@ -209,7 +217,7 @@ public class ReportsPage {
             statusLabel.setText("Full");
             statusLabel.setStyle(
                 "-fx-background-color: rgba(234, 84, 85, 0.15); " +
-                "-fx-text-fill: " + ColorScheme.DANGER_HEX + "; " +
+                "-fx-text-fill: " + ColorScheme.ERROR_600_HEX + "; " +
                 "-fx-background-radius: 12; " +
                 "-fx-font-weight: 600;"
             );
@@ -217,7 +225,7 @@ public class ReportsPage {
             statusLabel.setText("Filling");
             statusLabel.setStyle(
                 "-fx-background-color: rgba(255, 159, 67, 0.15); " +
-                "-fx-text-fill: " + ColorScheme.WARNING_HEX + "; " +
+                "-fx-text-fill: " + ColorScheme.WARNING_600_HEX + "; " +
                 "-fx-background-radius: 12; " +
                 "-fx-font-weight: 600;"
             );
@@ -225,7 +233,7 @@ public class ReportsPage {
             statusLabel.setText("Available");
             statusLabel.setStyle(
                 "-fx-background-color: rgba(40, 199, 111, 0.15); " +
-                "-fx-text-fill: " + ColorScheme.SUCCESS_HEX + "; " +
+                "-fx-text-fill: " + ColorScheme.SUCCESS_600_HEX + "; " +
                 "-fx-background-radius: 12; " +
                 "-fx-font-weight: 600;"
             );
@@ -259,7 +267,7 @@ public class ReportsPage {
 
     private String getTotalStudents() {
         try {
-            return String.valueOf(new StudentDao().getAllStudents().size());
+            return String.valueOf(studentDao.getAllStudents().size());
         } catch (SQLException e) {
             return "0";
         }
@@ -267,7 +275,7 @@ public class ReportsPage {
 
     private String getTotalCourses() {
         try {
-            return String.valueOf(new CourseDao().getAllCourses().size());
+            return String.valueOf(courseDao.getAllCourses().size());
         } catch (SQLException e) {
             return "0";
         }
@@ -275,7 +283,10 @@ public class ReportsPage {
 
     private String getTotalEnrollments() {
         try {
-            return String.valueOf(new EnrollmentDao().getEnrollmentSummary().size());
+            // Count only approved registrations
+            return String.valueOf(registrationDao.getAllRegistrations().stream()
+                .filter(r -> "APPROVED".equals(r.getStatus()))
+                .count());
         } catch (SQLException e) {
             return "0";
         }
