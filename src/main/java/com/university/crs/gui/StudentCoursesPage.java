@@ -12,6 +12,7 @@ import javafx.stage.Stage;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Student Courses Page - Browse and register for available courses
@@ -21,7 +22,7 @@ public class StudentCoursesPage {
 
     private final Stage stage;
     private final User user;
-    private final CourseDao courseDao = new CourseDao();
+    private final CourseV2Dao courseDao = new CourseV2Dao();
     private final StudentV2Dao studentDao = new StudentV2Dao();
     private final RegistrationDao registrationDao = new RegistrationDao();
     private final RegistrationPeriodDao periodDao = new RegistrationPeriodDao();
@@ -29,6 +30,7 @@ public class StudentCoursesPage {
     
     private VBox coursesContainer;
     private StudentV2 currentStudent;
+    private ComboBox<String> yearFilter;
     private ComboBox<String> semesterFilter;
 
     public StudentCoursesPage(Stage stage, User user) {
@@ -60,7 +62,7 @@ public class StudentCoursesPage {
 
         // Courses grid
         coursesContainer = new VBox(20);
-        filterCourses("All Years", "All Semesters");
+        filterCourses();
 
         page.getChildren().addAll(header, statusBanner, filters, coursesContainer);
         
@@ -164,13 +166,11 @@ public class StudentCoursesPage {
         yearLabel.setFont(FontLoader.getOutfitMedium(14));
         yearLabel.setTextFill(ColorScheme.DARK_TEXT);
         
-        ComboBox<String> yearFilter = new ComboBox<>();
-        yearFilter.getItems().addAll("All Years", "2024", "2025", "2026", "2027", "2028");
+        yearFilter = new ComboBox<>();
+        yearFilter.getItems().addAll("All Years", "1", "2", "3", "4");
         yearFilter.setValue("All Years");
         yearFilter.setPrefWidth(150);
-        yearFilter.setOnAction(e -> {
-            filterCourses(yearFilter.getValue(), semesterFilter.getValue());
-        });
+        yearFilter.setOnAction(e -> filterCourses());
         
         // Semester filter
         Label semesterLabel = new Label("Semester:");
@@ -181,36 +181,54 @@ public class StudentCoursesPage {
         semesterFilter.getItems().addAll("All Semesters", "Semester I", "Semester II");
         semesterFilter.setValue("All Semesters");
         semesterFilter.setPrefWidth(180);
-        semesterFilter.setOnAction(e -> {
-            filterCourses(yearFilter.getValue(), semesterFilter.getValue());
-        });
+        semesterFilter.setOnAction(e -> filterCourses());
         
         filters.getChildren().addAll(yearLabel, yearFilter, semesterLabel, semesterFilter);
         
         return filters;
     }
 
-    private void filterCourses(String selectedYear, String selectedSemester) {
+    private void filterCourses() {
         coursesContainer.getChildren().clear();
         
         try {
-            List<Course> courses = courseDao.getAllCourses();
+            // Get all courses from database
+            List<CourseV2> allCourses = courseDao.getAllCourses();
             
-            // Filter by student's department automatically
-            String studentDepartment = currentStudent.getDepartmentName();
+            // Filter by student's department (auto-fetched from profile)
+            int studentDepartmentId = currentStudent.getDepartmentId();
+            List<CourseV2> filteredCourses = allCourses.stream()
+                .filter(course -> course.getDepartmentId() == studentDepartmentId)
+                .collect(Collectors.toList());
             
-            for (Course course : courses) {
-                // TODO: Filter by year and semester when Course model is updated with these fields
-                // For now, show all courses from student's department
-                coursesContainer.getChildren().add(createCourseCard(course));
+            // Filter by selected year level
+            String selectedYear = yearFilter.getValue();
+            if (!selectedYear.equals("All Years")) {
+                int yearLevel = Integer.parseInt(selectedYear);
+                filteredCourses = filteredCourses.stream()
+                    .filter(course -> course.getYearLevel() == yearLevel)
+                    .collect(Collectors.toList());
             }
             
-            if (courses.isEmpty()) {
-                Label emptyLabel = new Label("No courses available for your department.");
+            // Filter by selected semester
+            String selectedSemester = semesterFilter.getValue();
+            if (!selectedSemester.equals("All Semesters")) {
+                filteredCourses = filteredCourses.stream()
+                    .filter(course -> course.getSemesterName().equals(selectedSemester))
+                    .collect(Collectors.toList());
+            }
+            
+            // Display filtered courses
+            if (filteredCourses.isEmpty()) {
+                Label emptyLabel = new Label("No courses available for the selected filters.");
                 emptyLabel.setFont(FontLoader.getOutfit(14));
                 emptyLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
                 emptyLabel.setPadding(new Insets(40));
                 coursesContainer.getChildren().add(emptyLabel);
+            } else {
+                for (CourseV2 course : filteredCourses) {
+                    coursesContainer.getChildren().add(createCourseCard(course));
+                }
             }
             
         } catch (SQLException e) {
@@ -218,7 +236,7 @@ public class StudentCoursesPage {
         }
     }
 
-    private VBox createCourseCard(Course course) {
+    private VBox createCourseCard(CourseV2 course) {
         VBox card = new VBox(16);
         card.setStyle(StyleConstants.card());
         card.setPadding(new Insets(24));
@@ -231,7 +249,7 @@ public class StudentCoursesPage {
         VBox titleBox = new VBox(4);
         HBox.setHgrow(titleBox, Priority.ALWAYS);
         
-        Label courseCode = new Label(course.getCode());
+        Label courseCode = new Label(course.getCourseCode());
         courseCode.setFont(FontLoader.getOutfitSemiBold(16));
         courseCode.setTextFill(ColorScheme.PRIMARY_600);
         
@@ -260,7 +278,8 @@ public class StudentCoursesPage {
         detailsRow.getChildren().addAll(
             createDetailItem("👨‍🏫", "Instructor", course.getInstructorName() != null ? course.getInstructorName() : "TBA"),
             createDetailItem("👥", "Capacity", course.getCapacity() + " students"),
-            createDetailItem("📚", "Department", currentStudent.getDepartmentName())
+            createDetailItem("📚", "Semester", course.getSemesterName()),
+            createDetailItem("📅", "Year", "Year " + course.getYearLevel())
         );
         
         // Action button
@@ -318,7 +337,7 @@ public class StudentCoursesPage {
         return item;
     }
 
-    private void registerForCourse(Course course) {
+    private void registerForCourse(CourseV2 course) {
         // Step 4: System validates
         try {
             // Check if registration is open
@@ -351,16 +370,16 @@ public class StudentCoursesPage {
                 return;
             }
             
-            // TODO: Check prerequisites when implemented
-            
             // Confirm registration
             Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
             confirm.setTitle("Confirm Registration");
-            confirm.setHeaderText("Register for " + course.getCode() + "?");
+            confirm.setHeaderText("Register for " + course.getCourseCode() + "?");
             confirm.setContentText(
                 "Course: " + course.getTitle() + "\n" +
                 "Credits: " + course.getCredits() + "\n" +
-                "Instructor: " + (course.getInstructorName() != null ? course.getInstructorName() : "TBA") + "\n\n" +
+                "Instructor: " + (course.getInstructorName() != null ? course.getInstructorName() : "TBA") + "\n" +
+                "Semester: " + course.getSemesterName() + "\n" +
+                "Year: " + course.getYearLevel() + "\n\n" +
                 "Your registration will be submitted for approval."
             );
             
@@ -380,7 +399,7 @@ public class StudentCoursesPage {
                         );
                         success.showAndWait();
                         
-                        filterCourses("All Years", "All Semesters");
+                        filterCourses();
                         
                     } catch (SQLException e) {
                         showAlert("Error", "Failed to submit registration: " + e.getMessage());

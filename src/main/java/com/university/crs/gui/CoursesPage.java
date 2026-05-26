@@ -1,10 +1,7 @@
 package com.university.crs.gui;
 
-import com.university.crs.dao.CourseDao;
-import com.university.crs.dao.InstructorDao;
-import com.university.crs.model.Course;
-import com.university.crs.model.Instructor;
-import com.university.crs.model.User;
+import com.university.crs.dao.*;
+import com.university.crs.model.*;
 import com.university.crs.util.ValidationUtil;
 import com.university.crs.util.ValidationUtil.ValidationResult;
 import javafx.geometry.Insets;
@@ -25,7 +22,9 @@ public class CoursesPage {
 
     private final Stage stage;
     private final User  user;
-    private final CourseDao courseDao = new CourseDao();
+    private final CourseV2Dao courseDao = new CourseV2Dao();
+    private final DepartmentDao departmentDao = new DepartmentDao();
+    private final SemesterDao semesterDao = new SemesterDao();
     private final InstructorDao instructorDao = new InstructorDao();
     private VBox mainContainer; // Store reference to main container
 
@@ -87,18 +86,21 @@ public class CoursesPage {
 
         // Table header
         HBox headerRow = new HBox();
-        headerRow.setSpacing(20);
+        headerRow.setSpacing(15);
         headerRow.setPadding(new Insets(0, 0, 15, 0));
         headerRow.setStyle("-fx-border-color: " + ColorScheme.SOFT_GRAY_HEX + "; -fx-border-width: 0 0 1 0;");
         
-        Label col1 = createHeaderLabel("Course Code", 120);
-        Label col2 = createHeaderLabel("Course Name", 280);
-        Label col3 = createHeaderLabel("Instructor", 180);
-        Label col4 = createHeaderLabel("Credits", 80);
-        Label col5 = createHeaderLabel("Seats", 80);
-        Label col6 = createHeaderLabel("Actions", 120);
+        Label col1 = createHeaderLabel("Code", 100);
+        Label col2 = createHeaderLabel("Title", 200);
+        Label col3 = createHeaderLabel("Department", 140);
+        Label col4 = createHeaderLabel("Semester", 100);
+        Label col5 = createHeaderLabel("Year", 60);
+        Label col6 = createHeaderLabel("Instructor", 140);
+        Label col7 = createHeaderLabel("Credits", 70);
+        Label col8 = createHeaderLabel("Capacity", 80);
+        Label col9 = createHeaderLabel("Actions", 100);
         
-        headerRow.getChildren().addAll(col1, col2, col3, col4, col5, col6);
+        headerRow.getChildren().addAll(col1, col2, col3, col4, col5, col6, col7, col8, col9);
 
         // Table rows
         VBox rows = new VBox(0);
@@ -120,8 +122,8 @@ public class CoursesPage {
     private void refreshTableRows(VBox rows) {
         rows.getChildren().clear();
         try {
-            List<Course> courses = courseDao.getAllCourses();
-            for (Course course : courses) {
+            List<CourseV2> courses = courseDao.getAllCourses();
+            for (CourseV2 course : courses) {
                 rows.getChildren().add(createTableRow(course, rows));
             }
         } catch (SQLException e) {
@@ -129,21 +131,24 @@ public class CoursesPage {
         }
     }
 
-    private HBox createTableRow(Course course, VBox parentRows) {
+    private HBox createTableRow(CourseV2 course, VBox parentRows) {
         HBox row = new HBox();
-        row.setSpacing(20);
+        row.setSpacing(15);
         row.setPadding(new Insets(15, 0, 15, 0));
         row.setStyle("-fx-border-color: #f3f4f6; -fx-border-width: 0 0 1 0;");
         
-        Label col1 = createCellLabel(course.getCode(), 120);
-        Label col2 = createCellLabel(course.getTitle(), 280);
-        Label col3 = createCellLabel(course.getInstructorName() != null ? course.getInstructorName() : "TBA", 180);
-        Label col4 = createCellLabel(String.valueOf(course.getCredits()), 80);
-        Label col5 = createCellLabel(String.valueOf(course.getCapacity()), 80);
+        Label col1 = createCellLabel(course.getCourseCode(), 100);
+        Label col2 = createCellLabel(course.getTitle(), 200);
+        Label col3 = createCellLabel(course.getDepartmentName(), 140);
+        Label col4 = createCellLabel(course.getSemesterName(), 100);
+        Label col5 = createCellLabel(String.valueOf(course.getYearLevel()), 60);
+        Label col6 = createCellLabel(course.getInstructorName() != null ? course.getInstructorName() : "TBA", 140);
+        Label col7 = createCellLabel(String.valueOf(course.getCredits()), 70);
+        Label col8 = createCellLabel(String.valueOf(course.getCapacity()), 80);
         
         // Actions (Edit and Delete icons)
         HBox actions = new HBox(15);
-        actions.setPrefWidth(120);
+        actions.setPrefWidth(100);
         actions.setAlignment(Pos.CENTER_LEFT);
         
         // Edit button (pencil icon)
@@ -190,7 +195,7 @@ public class CoursesPage {
         
         actions.getChildren().addAll(editBtn, deleteBtn);
         
-        row.getChildren().addAll(col1, col2, col3, col4, col5, actions);
+        row.getChildren().addAll(col1, col2, col3, col4, col5, col6, col7, col8, actions);
         
         // Hover effect
         row.setOnMouseEntered(e -> row.setStyle(
@@ -232,31 +237,55 @@ public class CoursesPage {
         TextField titleField = new TextField();
         titleField.setPromptText("e.g., Introduction to Computer Science");
         
+        TextArea descriptionField = new TextArea();
+        descriptionField.setPromptText("Course description (optional)");
+        descriptionField.setPrefRowCount(2);
+        
         TextField creditsField = new TextField();
         creditsField.setPromptText("e.g., 3");
         
-        // Department dropdown
+        // Department dropdown - load from database
         ComboBox<String> departmentCombo = new ComboBox<>();
-        departmentCombo.getItems().addAll("Computer Science", "Software Engineering", "Information Technology", "Electrical Engineering", "Mechanical Engineering");
+        try {
+            List<Department> departments = departmentDao.getAllDepartments();
+            for (Department dept : departments) {
+                departmentCombo.getItems().add(dept.getId() + ": " + dept.getName());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading departments: " + e.getMessage());
+        }
         departmentCombo.setPromptText("Select Department");
         
-        // Year dropdown
+        // Year dropdown (year_level: 1, 2, 3, 4)
         ComboBox<String> yearCombo = new ComboBox<>();
-        yearCombo.getItems().addAll("2024", "2025", "2026", "2027", "2028");
-        yearCombo.setPromptText("Select Year");
+        yearCombo.getItems().addAll("1", "2", "3", "4");
+        yearCombo.setPromptText("Select Year Level");
         
-        // Semester dropdown
+        // Semester dropdown - load from database
         ComboBox<String> semesterCombo = new ComboBox<>();
-        semesterCombo.getItems().addAll("Semester I", "Semester II");
+        try {
+            List<Semester> semesters = semesterDao.getAllSemesters();
+            for (Semester semester : semesters) {
+                semesterCombo.getItems().add(semester.getId() + ": " + semester.getSemesterName());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading semesters: " + e.getMessage());
+        }
         semesterCombo.setPromptText("Select Semester");
         
-        // Prerequisite field (optional)
-        TextField prerequisiteField = new TextField();
-        prerequisiteField.setPromptText("e.g., CS100 (optional)");
-        
-        // Instructor name field (optional, no instructor account)
-        TextField instructorNameField = new TextField();
-        instructorNameField.setPromptText("e.g., Dr. John Smith (optional)");
+        // Instructor dropdown (optional)
+        ComboBox<String> instructorCombo = new ComboBox<>();
+        instructorCombo.getItems().add("-- No Instructor --");
+        try {
+            List<Instructor> instructors = instructorDao.getAllInstructors();
+            for (Instructor instructor : instructors) {
+                instructorCombo.getItems().add(instructor.getId() + ": " + instructor.getName());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading instructors: " + e.getMessage());
+        }
+        instructorCombo.setValue("-- No Instructor --");
+        instructorCombo.setPromptText("Select Instructor (optional)");
         
         TextField capacityField = new TextField();
         capacityField.setPromptText("e.g., 30");
@@ -265,18 +294,18 @@ public class CoursesPage {
         grid.add(codeField, 1, 0);
         grid.add(new Label("Course Title:"), 0, 1);
         grid.add(titleField, 1, 1);
-        grid.add(new Label("Credit Hours:"), 0, 2);
-        grid.add(creditsField, 1, 2);
-        grid.add(new Label("Department:"), 0, 3);
-        grid.add(departmentCombo, 1, 3);
-        grid.add(new Label("Year:"), 0, 4);
-        grid.add(yearCombo, 1, 4);
-        grid.add(new Label("Semester:"), 0, 5);
-        grid.add(semesterCombo, 1, 5);
-        grid.add(new Label("Prerequisite:"), 0, 6);
-        grid.add(prerequisiteField, 1, 6);
-        grid.add(new Label("Instructor Name:"), 0, 7);
-        grid.add(instructorNameField, 1, 7);
+        grid.add(new Label("Description:"), 0, 2);
+        grid.add(descriptionField, 1, 2);
+        grid.add(new Label("Credit Hours:"), 0, 3);
+        grid.add(creditsField, 1, 3);
+        grid.add(new Label("Department:"), 0, 4);
+        grid.add(departmentCombo, 1, 4);
+        grid.add(new Label("Year Level:"), 0, 5);
+        grid.add(yearCombo, 1, 5);
+        grid.add(new Label("Semester:"), 0, 6);
+        grid.add(semesterCombo, 1, 6);
+        grid.add(new Label("Instructor:"), 0, 7);
+        grid.add(instructorCombo, 1, 7);
         grid.add(new Label("Capacity:"), 0, 8);
         grid.add(capacityField, 1, 8);
 
@@ -314,7 +343,7 @@ public class CoursesPage {
                 
                 // Validate year
                 if (yearCombo.getValue() == null) {
-                    showAlert("Validation Error", "Please select a year.");
+                    showAlert("Validation Error", "Please select a year level.");
                     return;
                 }
                 
@@ -334,32 +363,42 @@ public class CoursesPage {
                 try {
                     String code = codeResult.getStringValue();
                     String title = titleResult.getStringValue();
+                    String description = descriptionField.getText().trim();
                     int credits = creditsResult.getIntValue();
-                    String department = departmentCombo.getValue();
-                    String year = yearCombo.getValue();
-                    String semester = semesterCombo.getValue();
-                    String prerequisite = prerequisiteField.getText().trim();
-                    String instructorName = instructorNameField.getText().trim();
                     int capacity = capacityResult.getIntValue();
-
-                    // TODO: Update courseDao.addCourse() to accept all these fields
-                    // For now, using the existing method with instructor ID as null
-                    courseDao.addCourse(code, title, null, credits, capacity);
                     
-                    showSuccessAlert("Success", "Course added successfully!\n\nCourse: " + code + " - " + title + 
-                                   "\nDepartment: " + department + 
-                                   "\nYear: " + year + " | Semester: " + semester +
-                                   (prerequisite.isEmpty() ? "" : "\nPrerequisite: " + prerequisite) +
-                                   (instructorName.isEmpty() ? "" : "\nInstructor: " + instructorName));
+                    // Extract department ID
+                    int departmentId = Integer.parseInt(departmentCombo.getValue().split(":")[0]);
+                    
+                    // Extract year level
+                    int yearLevel = Integer.parseInt(yearCombo.getValue());
+                    
+                    // Extract semester ID
+                    int semesterId = Integer.parseInt(semesterCombo.getValue().split(":")[0]);
+                    
+                    // Extract instructor ID (optional)
+                    Integer instructorId = null;
+                    String selectedInstructor = instructorCombo.getValue();
+                    if (selectedInstructor != null && !selectedInstructor.equals("-- No Instructor --")) {
+                        instructorId = Integer.parseInt(selectedInstructor.split(":")[0]);
+                    }
+
+                    // Add course to courses_v2 table
+                    courseDao.addCourse(code, title, description, departmentId, instructorId, 
+                                       credits, capacity, semesterId, yearLevel);
+                    
+                    showSuccessAlert("Success", "Course added successfully!\n\nCourse: " + code + " - " + title);
                     refreshPage();
                 } catch (SQLException e) {
                     showAlert("Database Error", "Failed to add course: " + e.getMessage());
+                } catch (NumberFormatException e) {
+                    showAlert("Error", "Invalid selection format: " + e.getMessage());
                 }
             }
         });
     }
 
-    private void showEditCourseDialog(Course course, VBox parentRows) {
+    private void showEditCourseDialog(CourseV2 course, VBox parentRows) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Edit Course");
         dialog.setHeaderText("Update course details");
@@ -369,8 +408,40 @@ public class CoursesPage {
         grid.setVgap(10);
         grid.setPadding(new Insets(20));
 
-        TextField codeField = new TextField(course.getCode());
+        TextField codeField = new TextField(course.getCourseCode());
         TextField titleField = new TextField(course.getTitle());
+        
+        TextArea descriptionField = new TextArea(course.getDescription() != null ? course.getDescription() : "");
+        descriptionField.setPrefRowCount(2);
+        
+        // Department dropdown
+        ComboBox<String> departmentCombo = new ComboBox<>();
+        try {
+            List<Department> departments = departmentDao.getAllDepartments();
+            for (Department dept : departments) {
+                departmentCombo.getItems().add(dept.getId() + ": " + dept.getName());
+            }
+            departmentCombo.setValue(course.getDepartmentId() + ": " + course.getDepartmentName());
+        } catch (SQLException e) {
+            System.err.println("Error loading departments: " + e.getMessage());
+        }
+        
+        // Year dropdown
+        ComboBox<String> yearCombo = new ComboBox<>();
+        yearCombo.getItems().addAll("1", "2", "3", "4");
+        yearCombo.setValue(String.valueOf(course.getYearLevel()));
+        
+        // Semester dropdown
+        ComboBox<String> semesterCombo = new ComboBox<>();
+        try {
+            List<Semester> semesters = semesterDao.getAllSemesters();
+            for (Semester semester : semesters) {
+                semesterCombo.getItems().add(semester.getId() + ": " + semester.getSemesterName());
+            }
+            semesterCombo.setValue(course.getSemesterId() + ": " + course.getSemesterName());
+        } catch (SQLException e) {
+            System.err.println("Error loading semesters: " + e.getMessage());
+        }
         
         // Instructor dropdown
         ComboBox<String> instructorCombo = new ComboBox<>();
@@ -400,12 +471,20 @@ public class CoursesPage {
         grid.add(codeField, 1, 0);
         grid.add(new Label("Course Title:"), 0, 1);
         grid.add(titleField, 1, 1);
-        grid.add(new Label("Instructor:"), 0, 2);
-        grid.add(instructorCombo, 1, 2);
-        grid.add(new Label("Credits:"), 0, 3);
-        grid.add(creditsField, 1, 3);
-        grid.add(new Label("Capacity:"), 0, 4);
-        grid.add(capacityField, 1, 4);
+        grid.add(new Label("Description:"), 0, 2);
+        grid.add(descriptionField, 1, 2);
+        grid.add(new Label("Department:"), 0, 3);
+        grid.add(departmentCombo, 1, 3);
+        grid.add(new Label("Year Level:"), 0, 4);
+        grid.add(yearCombo, 1, 4);
+        grid.add(new Label("Semester:"), 0, 5);
+        grid.add(semesterCombo, 1, 5);
+        grid.add(new Label("Instructor:"), 0, 6);
+        grid.add(instructorCombo, 1, 6);
+        grid.add(new Label("Credits:"), 0, 7);
+        grid.add(creditsField, 1, 7);
+        grid.add(new Label("Capacity:"), 0, 8);
+        grid.add(capacityField, 1, 8);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
@@ -423,6 +502,24 @@ public class CoursesPage {
                 ValidationResult titleResult = ValidationUtil.validateCourseTitle(titleField.getText());
                 if (!titleResult.isValid()) {
                     showAlert("Validation Error", titleResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate department
+                if (departmentCombo.getValue() == null) {
+                    showAlert("Validation Error", "Please select a department.");
+                    return;
+                }
+                
+                // Validate year
+                if (yearCombo.getValue() == null) {
+                    showAlert("Validation Error", "Please select a year level.");
+                    return;
+                }
+                
+                // Validate semester
+                if (semesterCombo.getValue() == null) {
+                    showAlert("Validation Error", "Please select a semester.");
                     return;
                 }
                 
@@ -454,24 +551,37 @@ public class CoursesPage {
                 try {
                     String code = codeResult.getStringValue();
                     String title = titleResult.getStringValue();
+                    String description = descriptionField.getText().trim();
                     int credits = creditsResult.getIntValue();
                     int capacity = capacityResult.getIntValue();
+                    
+                    // Extract department ID
+                    int departmentId = Integer.parseInt(departmentCombo.getValue().split(":")[0]);
+                    
+                    // Extract year level
+                    int yearLevel = Integer.parseInt(yearCombo.getValue());
+                    
+                    // Extract semester ID
+                    int semesterId = Integer.parseInt(semesterCombo.getValue().split(":")[0]);
 
-                    courseDao.updateCourse(course.getId(), code, title, instructorId, credits, capacity);
+                    courseDao.updateCourse(course.getId(), code, title, description, departmentId, 
+                                          instructorId, credits, capacity, semesterId, yearLevel);
                     showSuccessAlert("Success", "Course updated successfully!");
                     refreshTableRows(parentRows);
                 } catch (SQLException e) {
                     showAlert("Database Error", "Failed to update course: " + e.getMessage());
+                } catch (NumberFormatException e) {
+                    showAlert("Error", "Invalid selection format: " + e.getMessage());
                 }
             }
         });
     }
 
-    private void deleteCourse(Course course, VBox parentRows) {
+    private void deleteCourse(CourseV2 course, VBox parentRows) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Delete Course");
         confirm.setHeaderText("Are you sure you want to delete this course?");
-        confirm.setContentText("Course: " + course.getCode() + " - " + course.getTitle());
+        confirm.setContentText("Course: " + course.getCourseCode() + " - " + course.getTitle());
 
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
