@@ -153,4 +153,56 @@ public class ColorScheme {
     public static String getPrimaryButtonHoverStyle() {
         return StyleConstants.buttonPrimaryHover();
     }
+    
+    /**
+     * Get success button style
+     */
+    public static String getSuccessButtonStyle() {
+        return String.format(
+            "-fx-background-color: %s; " +
+            "-fx-text-fill: white; " +
+            "-fx-background-radius: 8; " +
+            "-fx-cursor: hand;",
+            SUCCESS_600_HEX
+        );
+    }
+    
+    /**
+     * Get success button hover style
+     */
+    public static String getSuccessButtonHoverStyle() {
+        return String.format(
+            "-fx-background-color: %s; " +
+            "-fx-text-fill: white; " +
+            "-fx-background-radius: 8; " +
+            "-fx-cursor: hand;",
+            SUCCESS_700_HEX
+        );
+    }
+    
+    /**
+     * Get danger button style
+     */
+    public static String getDangerButtonStyle() {
+        return String.format(
+            "-fx-background-color: %s; " +
+            "-fx-text-fill: white; " +
+            "-fx-background-radius: 8; " +
+            "-fx-cursor: hand;",
+            ERROR_600_HEX
+        );
+    }
+    
+    /**
+     * Get danger button hover style
+     */
+    public static String getDangerButtonHoverStyle() {
+        return String.format(
+            "-fx-background-color: %s; " +
+            "-fx-text-fill: white; " +
+            "-fx-background-radius: 8; " +
+            "-fx-cursor: hand;",
+            ERROR_700_HEX
+        );
+    }
 }

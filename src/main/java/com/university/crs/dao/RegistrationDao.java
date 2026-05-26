@@ -115,6 +115,25 @@ public class RegistrationDao {
     }
 
     /**
+     * Update registration status (generic method for approve/reject)
+     */
+    public boolean updateRegistrationStatus(int registrationId, String status, int processedByUserId, String notes) throws SQLException {
+        String sql = """
+            UPDATE registrations
+            SET status = ?, processed_at = NOW(), processed_by = ?, notes = ?
+            WHERE id = ?
+        """;
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, status);
+            stmt.setInt(2, processedByUserId);
+            stmt.setString(3, notes);
+            stmt.setInt(4, registrationId);
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
+    /**
      * Approve a registration
      */
     public boolean approveRegistration(int registrationId, int processedByUserId, String notes) throws SQLException {
