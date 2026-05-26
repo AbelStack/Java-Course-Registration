@@ -30,7 +30,6 @@ public class StudentCoursesPage {
     private VBox coursesContainer;
     private StudentV2 currentStudent;
     private ComboBox<String> semesterFilter;
-    private ComboBox<String> departmentFilter;
 
     public StudentCoursesPage(Stage stage, User user) {
         this.stage = stage;
@@ -61,7 +60,7 @@ public class StudentCoursesPage {
 
         // Courses grid
         coursesContainer = new VBox(20);
-        refreshCourses();
+        filterCourses("All Years", "All Semesters");
 
         page.getChildren().addAll(header, statusBanner, filters, coursesContainer);
         
@@ -160,6 +159,19 @@ public class StudentCoursesPage {
         HBox filters = new HBox(15);
         filters.setAlignment(Pos.CENTER_LEFT);
         
+        // Year filter
+        Label yearLabel = new Label("Year:");
+        yearLabel.setFont(FontLoader.getOutfitMedium(14));
+        yearLabel.setTextFill(ColorScheme.DARK_TEXT);
+        
+        ComboBox<String> yearFilter = new ComboBox<>();
+        yearFilter.getItems().addAll("All Years", "2024", "2025", "2026", "2027", "2028");
+        yearFilter.setValue("All Years");
+        yearFilter.setPrefWidth(150);
+        yearFilter.setOnAction(e -> {
+            filterCourses(yearFilter.getValue(), semesterFilter.getValue());
+        });
+        
         // Semester filter
         Label semesterLabel = new Label("Semester:");
         semesterLabel.setFont(FontLoader.getOutfitMedium(14));
@@ -169,42 +181,32 @@ public class StudentCoursesPage {
         semesterFilter.getItems().addAll("All Semesters", "Semester I", "Semester II");
         semesterFilter.setValue("All Semesters");
         semesterFilter.setPrefWidth(180);
-        semesterFilter.setOnAction(e -> refreshCourses());
+        semesterFilter.setOnAction(e -> {
+            filterCourses(yearFilter.getValue(), semesterFilter.getValue());
+        });
         
-        // Department filter
-        Label deptLabel = new Label("Department:");
-        deptLabel.setFont(FontLoader.getOutfitMedium(14));
-        deptLabel.setTextFill(ColorScheme.DARK_TEXT);
-        
-        departmentFilter = new ComboBox<>();
-        departmentFilter.getItems().addAll("All Departments", "Computer Science", "Software Engineering", 
-            "Information Technology", "Electrical Engineering", "Mechanical Engineering");
-        departmentFilter.setValue("All Departments");
-        departmentFilter.setPrefWidth(200);
-        departmentFilter.setOnAction(e -> refreshCourses());
-        
-        filters.getChildren().addAll(semesterLabel, semesterFilter, deptLabel, departmentFilter);
+        filters.getChildren().addAll(yearLabel, yearFilter, semesterLabel, semesterFilter);
         
         return filters;
     }
 
-    private void refreshCourses() {
+    private void filterCourses(String selectedYear, String selectedSemester) {
         coursesContainer.getChildren().clear();
         
         try {
             List<Course> courses = courseDao.getAllCourses();
             
-            // Apply filters
-            String selectedSemester = semesterFilter != null ? semesterFilter.getValue() : "All Semesters";
-            String selectedDept = departmentFilter != null ? departmentFilter.getValue() : "All Departments";
+            // Filter by student's department automatically
+            String studentDepartment = currentStudent.getDepartmentName();
             
             for (Course course : courses) {
-                // TODO: Add semester and department filtering when Course model is updated
+                // TODO: Filter by year and semester when Course model is updated with these fields
+                // For now, show all courses from student's department
                 coursesContainer.getChildren().add(createCourseCard(course));
             }
             
             if (courses.isEmpty()) {
-                Label emptyLabel = new Label("No courses available at the moment.");
+                Label emptyLabel = new Label("No courses available for your department.");
                 emptyLabel.setFont(FontLoader.getOutfit(14));
                 emptyLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
                 emptyLabel.setPadding(new Insets(40));
@@ -258,7 +260,7 @@ public class StudentCoursesPage {
         detailsRow.getChildren().addAll(
             createDetailItem("👨‍🏫", "Instructor", course.getInstructorName() != null ? course.getInstructorName() : "TBA"),
             createDetailItem("👥", "Capacity", course.getCapacity() + " students"),
-            createDetailItem("📚", "Department", "Computer Science") // TODO: Add department to Course model
+            createDetailItem("📚", "Department", currentStudent.getDepartmentName())
         );
         
         // Action button
@@ -378,7 +380,7 @@ public class StudentCoursesPage {
                         );
                         success.showAndWait();
                         
-                        refreshCourses();
+                        filterCourses("All Years", "All Semesters");
                         
                     } catch (SQLException e) {
                         showAlert("Error", "Failed to submit registration: " + e.getMessage());

@@ -71,10 +71,7 @@ public class StudentOverviewPage {
         // Quick actions
         VBox quickActions = buildQuickActionsCard();
 
-        // Recent activity
-        VBox recentActivity = buildRecentActivityCard();
-
-        page.getChildren().addAll(header, statsRow, quickActions, recentActivity);
+        page.getChildren().addAll(header, statsRow, quickActions);
         
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.setFitToWidth(true);
@@ -180,59 +177,5 @@ public class StudentOverviewPage {
         ));
         
         return action;
-    }
-
-    private VBox buildRecentActivityCard() {
-        VBox card = new VBox(20);
-        card.setStyle(StyleConstants.card());
-        card.setPadding(new Insets(30));
-        
-        Label title = new Label("Recent Activity");
-        title.setFont(FontLoader.getOutfitSemiBold(18));
-        title.setTextFill(ColorScheme.DARK_TEXT);
-        
-        VBox activityList = new VBox(15);
-        
-        // TODO: Load actual recent activity from database
-        activityList.getChildren().addAll(
-            createActivityItem("✅", "Registration approved for CS101", "2 hours ago", ColorScheme.SUCCESS_500),
-            createActivityItem("⏳", "Waiting for approval - MATH201", "1 day ago", ColorScheme.WARNING_500),
-            createActivityItem("📚", "Registered for 3 new courses", "2 days ago", ColorScheme.PRIMARY_500)
-        );
-        
-        card.getChildren().addAll(title, activityList);
-        
-        return card;
-    }
-
-    private HBox createActivityItem(String icon, String text, String time, Color iconColor) {
-        HBox item = new HBox(15);
-        item.setAlignment(Pos.CENTER_LEFT);
-        item.setPadding(new Insets(12));
-        item.setStyle(
-            "-fx-background-color: " + ColorScheme.GRAY_50_HEX + "; " +
-            "-fx-background-radius: 8;"
-        );
-        
-        Label iconLabel = new Label(icon);
-        iconLabel.setFont(FontLoader.getOutfitBold(20));
-        iconLabel.setTextFill(iconColor);
-        
-        VBox textBox = new VBox(4);
-        HBox.setHgrow(textBox, Priority.ALWAYS);
-        
-        Label textLabel = new Label(text);
-        textLabel.setFont(FontLoader.getOutfitMedium(14));
-        textLabel.setTextFill(ColorScheme.DARK_TEXT);
-        
-        Label timeLabel = new Label(time);
-        timeLabel.setFont(FontLoader.getOutfit(12));
-        timeLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
-        
-        textBox.getChildren().addAll(textLabel, timeLabel);
-        
-        item.getChildren().addAll(iconLabel, textBox);
-        
-        return item;
     }
 }
