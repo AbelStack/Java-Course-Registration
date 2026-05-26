@@ -1,6 +1,9 @@
 package com.university.crs.gui;
 
+import com.university.crs.dao.UserDao;
+import com.university.crs.dao.StudentV2Dao;
 import com.university.crs.model.User;
+import com.university.crs.model.StudentV2;
 import com.university.crs.util.ValidationUtil;
 import com.university.crs.util.ValidationUtil.ValidationResult;
 import javafx.geometry.Insets;
@@ -11,12 +14,19 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
+import java.sql.SQLException;
+
 /**
  * Profile page — displays user profile information with edit capability.
+ * Works for all three user roles: Admin, Department Head, and Student
  */
 public class ProfilePage {
 
     private final User user;
+    private final UserDao userDao = new UserDao();
+    private final StudentV2Dao studentDao = new StudentV2Dao();
+    private VBox profileCard;
+    private VBox infoSection;
 
     public ProfilePage(User user) {
         this.user = user;
@@ -29,14 +39,23 @@ public class ProfilePage {
         page.setAlignment(Pos.TOP_CENTER);
 
         // Header
+        VBox header = new VBox(8);
+        header.setAlignment(Pos.CENTER);
+        
         Label heading = new Label("My Profile");
         heading.setFont(FontLoader.getPoppinsBold(28));
         heading.setTextFill(ColorScheme.DARK_TEXT);
+        
+        Label subtitle = new Label(getRoleDisplayName());
+        subtitle.setFont(FontLoader.getOutfit(14));
+        subtitle.setTextFill(ColorScheme.MEDIUM_TEXT);
+        
+        header.getChildren().addAll(heading, subtitle);
 
         // Profile card
-        VBox profileCard = buildProfileCard();
+        profileCard = buildProfileCard();
 
-        page.getChildren().addAll(heading, profileCard);
+        page.getChildren().addAll(header, profileCard);
         
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.setFitToWidth(true);
@@ -49,7 +68,7 @@ public class ProfilePage {
 
     private VBox buildProfileCard() {
         VBox card = new VBox(30);
-        card.setMaxWidth(600);
+        card.setMaxWidth(700);
         card.setAlignment(Pos.TOP_CENTER);
         card.setPadding(new Insets(40, 50, 40, 50));
         card.setStyle(
@@ -58,123 +77,153 @@ public class ProfilePage {
             "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.08), 15, 0, 0, 3);"
         );
 
-        // Profile avatar with edit icon
+        // Profile avatar with role badge
         StackPane avatarContainer = createAvatar();
 
         // Profile information fields
-        VBox infoSection = new VBox(20);
+        infoSection = new VBox(15);
         infoSection.setAlignment(Pos.CENTER);
+        
+        refreshProfileInfo();
 
-        infoSection.getChildren().addAll(
-            createInfoRow("Full Name", getUserFullName()),
-            createInfoRow("Username", user.getUsername()),
-            createInfoRow("Email", getUserEmail()),
-            createInfoRow("Department", getUserDepartment()),
-            createInfoRow("Phone", getUserPhone())
-        );
-
-        // Edit Profile button
-        Button editBtn = new Button("EDIT PROFILE");
-        editBtn.setFont(FontLoader.getPoppinsBold(14));
+        // Action buttons
+        HBox actionButtons = new HBox(15);
+        actionButtons.setAlignment(Pos.CENTER);
+        actionButtons.setPadding(new Insets(10, 0, 0, 0));
+        
+        Button editBtn = new Button("Edit Profile");
+        editBtn.setFont(FontLoader.getOutfitSemiBold(14));
         editBtn.setTextFill(Color.WHITE);
-        editBtn.setMaxWidth(Double.MAX_VALUE);
-        editBtn.setPrefHeight(50);
+        editBtn.setPrefWidth(180);
+        editBtn.setPrefHeight(45);
         editBtn.setStyle(ColorScheme.getPrimaryButtonStyle());
         editBtn.setOnMouseEntered(e -> editBtn.setStyle(ColorScheme.getPrimaryButtonHoverStyle()));
         editBtn.setOnMouseExited(e -> editBtn.setStyle(ColorScheme.getPrimaryButtonStyle()));
         editBtn.setOnAction(e -> showEditProfileDialog());
+        
+        Button changePasswordBtn = new Button("Change Password");
+        changePasswordBtn.setFont(FontLoader.getOutfitSemiBold(14));
+        changePasswordBtn.setTextFill(ColorScheme.PRIMARY_600);
+        changePasswordBtn.setPrefWidth(180);
+        changePasswordBtn.setPrefHeight(45);
+        changePasswordBtn.setStyle(
+            "-fx-background-color: " + ColorScheme.PRIMARY_50_HEX + "; " +
+            "-fx-background-radius: 8; " +
+            "-fx-cursor: hand;"
+        );
+        changePasswordBtn.setOnMouseEntered(e -> changePasswordBtn.setStyle(
+            "-fx-background-color: " + ColorScheme.PRIMARY_100_HEX + "; " +
+            "-fx-background-radius: 8; " +
+            "-fx-cursor: hand;"
+        ));
+        changePasswordBtn.setOnMouseExited(e -> changePasswordBtn.setStyle(
+            "-fx-background-color: " + ColorScheme.PRIMARY_50_HEX + "; " +
+            "-fx-background-radius: 8; " +
+            "-fx-cursor: hand;"
+        ));
+        changePasswordBtn.setOnAction(e -> showChangePasswordDialog());
+        
+        actionButtons.getChildren().addAll(editBtn, changePasswordBtn);
 
-        VBox.setMargin(editBtn, new Insets(10, 0, 0, 0));
-
-        card.getChildren().addAll(avatarContainer, infoSection, editBtn);
+        card.getChildren().addAll(avatarContainer, infoSection, actionButtons);
         return card;
+    }
+
+    private void refreshProfileInfo() {
+        infoSection.getChildren().clear();
+        
+        // Common fields for all users
+        infoSection.getChildren().addAll(
+            createInfoRow("👤", "Full Name", user.getFullName()),
+            createInfoRow("🔑", "Username", user.getUsername()),
+            createInfoRow("📧", "Email", user.getEmail()),
+            createInfoRow("🏢", "Department", user.getDepartment() != null ? user.getDepartment() : "N/A"),
+            createInfoRow("👔", "Role", getRoleDisplayName())
+        );
+        
+        // Additional fields for students
+        if (user.isStudent()) {
+            try {
+                StudentV2 student = studentDao.getStudentByStudentId(user.getUsername());
+                if (student != null) {
+                    infoSection.getChildren().addAll(
+                        createInfoRow("🆔", "Student ID", student.getStudentId()),
+                        createInfoRow("📚", "Year Level", "Year " + student.getYearLevel()),
+                        createInfoRow("📊", "GPA", String.format("%.2f", student.getGpa()))
+                    );
+                }
+            } catch (SQLException e) {
+                System.err.println("Error loading student details: " + e.getMessage());
+            }
+        }
     }
 
     private StackPane createAvatar() {
         StackPane container = new StackPane();
-        container.setPrefSize(150, 150);
+        container.setPrefSize(120, 120);
 
-        // Outer circle (light gray background)
-        Circle outerCircle = new Circle(75);
-        outerCircle.setFill(Color.rgb(240, 242, 245));
-        outerCircle.setStroke(Color.rgb(220, 225, 230));
+        // Outer circle with gradient
+        Circle outerCircle = new Circle(60);
+        outerCircle.setFill(ColorScheme.PRIMARY_50);
+        outerCircle.setStroke(ColorScheme.PRIMARY_200);
         outerCircle.setStrokeWidth(3);
 
-        // Avatar icon (simple person silhouette)
-        VBox avatarIcon = new VBox();
-        avatarIcon.setAlignment(Pos.CENTER);
-        
-        // Head
-        Circle head = new Circle(20);
-        head.setFill(ColorScheme.DEEP_BLUE);
-        
-        // Body (using a rounded rectangle shape)
-        StackPane body = new StackPane();
-        body.setPrefSize(50, 40);
-        body.setTranslateY(15);
-        body.setStyle(
-            "-fx-background-color: " + ColorScheme.MEDIUM_BLUE_HEX + "; " +
-            "-fx-background-radius: 25 25 0 0;"
-        );
-        
-        avatarIcon.getChildren().addAll(head, body);
+        // Avatar icon
+        Label avatarIcon = new Label(getAvatarEmoji());
+        avatarIcon.setFont(FontLoader.getOutfitBold(48));
 
-        // Edit icon (small circle with pencil)
-        StackPane editIcon = new StackPane();
-        editIcon.setPrefSize(35, 35);
-        editIcon.setTranslateX(50);
-        editIcon.setTranslateY(50);
-        editIcon.setStyle(
-            "-fx-background-color: " + ColorScheme.MEDIUM_BLUE_HEX + "; " +
-            "-fx-background-radius: 50%;"
-        );
-        
-        Label pencil = new Label("✏️");
-        pencil.setFont(FontLoader.getInter(16));
-        editIcon.getChildren().add(pencil);
-
-        container.getChildren().addAll(outerCircle, avatarIcon, editIcon);
+        container.getChildren().addAll(outerCircle, avatarIcon);
         return container;
     }
 
-    private HBox createInfoRow(String label, String value) {
-        HBox row = new HBox(20);
-        row.setAlignment(Pos.CENTER_LEFT);
-        row.setPadding(new Insets(12, 0, 12, 0));
-        row.setStyle("-fx-border-color: #f3f4f6; -fx-border-width: 0 0 1 0;");
+    private String getAvatarEmoji() {
+        if (user.isAdmin()) {
+            return "👨‍💼";
+        } else if (user.isDepartmentHead()) {
+            return "👨‍🏫";
+        } else {
+            return "👨‍🎓";
+        }
+    }
 
+    private String getRoleDisplayName() {
+        if (user.isAdmin()) {
+            return "System Administrator";
+        } else if (user.isDepartmentHead()) {
+            return "Department Head";
+        } else {
+            return "Student";
+        }
+    }
+
+    private HBox createInfoRow(String icon, String label, String value) {
+        HBox row = new HBox(15);
+        row.setAlignment(Pos.CENTER_LEFT);
+        row.setPadding(new Insets(12, 20, 12, 20));
+        row.setStyle(
+            "-fx-background-color: " + ColorScheme.GRAY_50_HEX + "; " +
+            "-fx-background-radius: 8;"
+        );
+
+        Label iconLabel = new Label(icon);
+        iconLabel.setFont(FontLoader.getOutfitBold(20));
+        iconLabel.setPrefWidth(30);
+        
+        VBox textBox = new VBox(2);
+        HBox.setHgrow(textBox, Priority.ALWAYS);
+        
         Label labelText = new Label(label);
-        labelText.setFont(FontLoader.getInter(14));
-        labelText.setTextFill(Color.BLACK);
-        labelText.setPrefWidth(150);
+        labelText.setFont(FontLoader.getOutfit(12));
+        labelText.setTextFill(ColorScheme.MEDIUM_TEXT);
 
         Label valueText = new Label(value);
-        valueText.setFont(FontLoader.getInter(15));
+        valueText.setFont(FontLoader.getOutfitSemiBold(15));
         valueText.setTextFill(ColorScheme.DARK_TEXT);
-        HBox.setHgrow(valueText, Priority.ALWAYS);
+        
+        textBox.getChildren().addAll(labelText, valueText);
 
-        row.getChildren().addAll(labelText, valueText);
+        row.getChildren().addAll(iconLabel, textBox);
         return row;
-    }
-
-    private String getUserFullName() {
-        // In a real app, this would come from the database
-        return user.isAdmin() ? "Admin User" : "John Doe";
-    }
-
-    private String getUserEmail() {
-        // In a real app, this would come from the database
-        return user.isAdmin() ? "admin@university.com" : "john.doe@email.com";
-    }
-
-    private String getUserDepartment() {
-        // In a real app, this would come from the database
-        return user.isAdmin() ? "Administration" : "Computer Science";
-    }
-
-    private String getUserPhone() {
-        // In a real app, this would come from the database
-        return "+1 123 456 7890";
     }
 
     private void showEditProfileDialog() {
@@ -187,66 +236,135 @@ public class ProfilePage {
         grid.setVgap(15);
         grid.setPadding(new Insets(20));
 
-        TextField nameField = new TextField(getUserFullName());
-        TextField emailField = new TextField(getUserEmail());
-        TextField deptField = new TextField(getUserDepartment());
-        TextField phoneField = new TextField(getUserPhone());
+        TextField emailField = new TextField(user.getEmail());
+        emailField.setPromptText("Enter email address");
 
-        grid.add(new Label("Full Name:"), 0, 0);
-        grid.add(nameField, 1, 0);
-        grid.add(new Label("Email:"), 0, 1);
-        grid.add(emailField, 1, 1);
-        grid.add(new Label("Department:"), 0, 2);
-        grid.add(deptField, 1, 2);
-        grid.add(new Label("Phone:"), 0, 3);
-        grid.add(phoneField, 1, 3);
+        grid.add(new Label("Email:"), 0, 0);
+        grid.add(emailField, 1, 0);
+        
+        Label noteLabel = new Label("Note: Username, full name, and department cannot be changed.");
+        noteLabel.setFont(FontLoader.getOutfit(12));
+        noteLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
+        noteLabel.setWrapText(true);
+        noteLabel.setMaxWidth(300);
+        grid.add(noteLabel, 0, 1, 2, 1);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         dialog.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                // Validate name
-                ValidationResult nameResult = ValidationUtil.validateName(nameField.getText());
-                if (!nameResult.isValid()) {
-                    showAlert("Validation Error", nameResult.getErrorMessage());
-                    return;
-                }
+                String email = emailField.getText().trim();
                 
                 // Validate email
-                ValidationResult emailResult = ValidationUtil.validateEmail(emailField.getText());
+                ValidationResult emailResult = ValidationUtil.validateEmail(email);
                 if (!emailResult.isValid()) {
                     showAlert("Validation Error", emailResult.getErrorMessage());
                     return;
                 }
                 
-                // Validate department
-                ValidationResult deptResult = ValidationUtil.validateRequired(deptField.getText(), "Department");
-                if (!deptResult.isValid()) {
-                    showAlert("Validation Error", deptResult.getErrorMessage());
+                try {
+                    // Check if email is already used by another user
+                    // TODO: Add method to check if email exists for different user
+                    
+                    // Update email in database
+                    userDao.updateUserEmail(user.getId(), email);
+                    
+                    // Update local user object
+                    user.setEmail(email);
+                    
+                    Alert success = new Alert(Alert.AlertType.INFORMATION);
+                    success.setTitle("Success");
+                    success.setHeaderText("Profile Updated");
+                    success.setContentText("Your email has been updated successfully!");
+                    success.showAndWait();
+                    
+                    // Refresh the profile display
+                    refreshProfileInfo();
+                    
+                } catch (SQLException e) {
+                    showAlert("Database Error", "Failed to update profile: " + e.getMessage());
+                }
+            }
+        });
+    }
+    
+    private void showChangePasswordDialog() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Change Password");
+        dialog.setHeaderText("Update your password");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(20));
+
+        PasswordField currentPasswordField = new PasswordField();
+        currentPasswordField.setPromptText("Enter current password");
+        
+        PasswordField newPasswordField = new PasswordField();
+        newPasswordField.setPromptText("Enter new password");
+        
+        PasswordField confirmPasswordField = new PasswordField();
+        confirmPasswordField.setPromptText("Confirm new password");
+
+        grid.add(new Label("Current Password:"), 0, 0);
+        grid.add(currentPasswordField, 1, 0);
+        grid.add(new Label("New Password:"), 0, 1);
+        grid.add(newPasswordField, 1, 1);
+        grid.add(new Label("Confirm Password:"), 0, 2);
+        grid.add(confirmPasswordField, 1, 2);
+        
+        Label hintLabel = new Label("Password must be at least 6 characters long.");
+        hintLabel.setFont(FontLoader.getOutfit(11));
+        hintLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
+        grid.add(hintLabel, 0, 3, 2, 1);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                String currentPassword = currentPasswordField.getText();
+                String newPassword = newPasswordField.getText();
+                String confirmPassword = confirmPasswordField.getText();
+                
+                // Validate inputs
+                if (currentPassword.isEmpty() || newPassword.isEmpty() || confirmPassword.isEmpty()) {
+                    showAlert("Validation Error", "All fields are required.");
                     return;
                 }
                 
-                // Validate phone (optional but if provided, should be valid)
-                String phone = phoneField.getText().trim();
-                if (!phone.isEmpty()) {
-                    // Basic phone validation: should contain only digits, spaces, hyphens, parentheses, and plus sign
-                    if (!phone.matches("^[\\d\\s\\-()+ ]+$")) {
-                        showAlert("Validation Error", "Phone number can only contain digits, spaces, hyphens, parentheses, and plus sign");
-                        return;
-                    }
-                    if (phone.replaceAll("[^\\d]", "").length() < 10) {
-                        showAlert("Validation Error", "Phone number must contain at least 10 digits");
-                        return;
-                    }
+                if (newPassword.length() < 6) {
+                    showAlert("Validation Error", "New password must be at least 6 characters long.");
+                    return;
                 }
                 
-                // In a real app, save to database
-                Alert success = new Alert(Alert.AlertType.INFORMATION);
-                success.setTitle("Success");
-                success.setHeaderText(null);
-                success.setContentText("Profile updated successfully!");
-                success.showAndWait();
+                if (!newPassword.equals(confirmPassword)) {
+                    showAlert("Validation Error", "New password and confirmation do not match.");
+                    return;
+                }
+                
+                try {
+                    // Verify current password
+                    User verifiedUser = userDao.login(user.getUsername(), currentPassword);
+                    if (verifiedUser == null) {
+                        showAlert("Authentication Error", "Current password is incorrect.");
+                        return;
+                    }
+                    
+                    // Update password
+                    userDao.updatePassword(user.getId(), newPassword);
+                    
+                    Alert success = new Alert(Alert.AlertType.INFORMATION);
+                    success.setTitle("Success");
+                    success.setHeaderText("Password Changed");
+                    success.setContentText("Your password has been updated successfully!");
+                    success.showAndWait();
+                    
+                } catch (SQLException e) {
+                    showAlert("Database Error", "Failed to change password: " + e.getMessage());
+                }
             }
         });
     }

@@ -255,4 +255,17 @@ public class UserDao {
             return stmt.executeUpdate() > 0;
         }
     }
+    
+    /**
+     * Update user email
+     */
+    public boolean updateUserEmail(int userId, String email) throws SQLException {
+        String sql = "UPDATE users SET email = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            stmt.setInt(2, userId);
+            return stmt.executeUpdate() > 0;
+        }
+    }
 }

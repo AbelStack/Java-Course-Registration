@@ -36,4 +36,7 @@ public class User {
     public boolean isAdmin()        { return "ADMIN".equals(role); }
     public boolean isStudent()      { return "STUDENT".equals(role); }
     public boolean isDepartmentHead() { return "DEPARTMENT_HEAD".equals(role); }
+    
+    // Setters
+    public void setEmail(String email) { this.email = email; }
 }

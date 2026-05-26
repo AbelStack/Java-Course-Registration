@@ -34,6 +34,8 @@ public class ColorScheme {
     
     // ── Status Colors ─────────────────────────────────────────────────────
     public static final Color PRIMARY_50 = Color.web("#ecf3ff");
+    public static final Color PRIMARY_100 = Color.web("#d9e7ff");
+    public static final Color PRIMARY_200 = Color.web("#b3cfff");
     public static final Color PRIMARY_500 = Color.web("#465fff");
     public static final Color PRIMARY_600 = Color.web("#3641f5");
     public static final Color PRIMARY_700 = Color.web("#2a33cc");
@@ -82,6 +84,8 @@ public class ColorScheme {
     public static final String GRAY_900_HEX = "#101828";
     
     public static final String PRIMARY_50_HEX = "#ecf3ff";
+    public static final String PRIMARY_100_HEX = "#d9e7ff";
+    public static final String PRIMARY_200_HEX = "#b3cfff";
     public static final String PRIMARY_500_HEX = "#465fff";
     public static final String PRIMARY_600_HEX = "#3641f5";
     public static final String PRIMARY_700_HEX = "#2a33cc";
