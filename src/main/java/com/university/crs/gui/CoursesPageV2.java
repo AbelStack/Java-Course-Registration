@@ -30,6 +30,10 @@ public class CoursesPageV2 {
     private final InstructorDao instructorDao = new InstructorDao();
     private final SemesterDao semesterDao = new SemesterDao();
     private VBox tableRowsContainer;
+    private List<CourseV2> allCourses; // Store all courses for filtering
+    private ComboBox<String> departmentFilter;
+    private ComboBox<String> semesterFilter;
+    private ComboBox<String> yearFilter;
 
     public CoursesPageV2(Stage stage, User user) {
         this.stage = stage;
@@ -64,10 +68,13 @@ public class CoursesPageV2 {
         
         header.getChildren().addAll(heading, spacer, addCourseBtn);
 
+        // Filters
+        HBox filters = buildFilters();
+
         // Table container
         VBox tableContainer = buildTableContainer();
 
-        page.getChildren().addAll(header, tableContainer);
+        page.getChildren().addAll(header, filters, tableContainer);
         
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.setFitToWidth(true);
@@ -76,6 +83,111 @@ public class CoursesPageV2 {
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         
         return scrollPane;
+    }
+
+    private HBox buildFilters() {
+        HBox filters = new HBox(15);
+        filters.setAlignment(Pos.CENTER_LEFT);
+        
+        // Department filter
+        Label deptLabel = new Label("Department:");
+        deptLabel.setFont(FontLoader.getOutfitMedium(14));
+        deptLabel.setTextFill(ColorScheme.DARK_TEXT);
+        
+        departmentFilter = new ComboBox<>();
+        departmentFilter.getItems().add("All Departments");
+        try {
+            List<Department> departments = departmentDao.getAllDepartments();
+            for (Department dept : departments) {
+                departmentFilter.getItems().add(dept.getId() + ": " + dept.getName());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading departments: " + e.getMessage());
+        }
+        departmentFilter.setValue("All Departments");
+        departmentFilter.setPrefWidth(220);
+        departmentFilter.setOnAction(e -> applyFilters());
+        
+        // Semester filter
+        Label semesterLabel = new Label("Semester:");
+        semesterLabel.setFont(FontLoader.getOutfitMedium(14));
+        semesterLabel.setTextFill(ColorScheme.DARK_TEXT);
+        
+        semesterFilter = new ComboBox<>();
+        semesterFilter.getItems().add("All Semesters");
+        try {
+            List<Semester> semesters = semesterDao.getAllSemesters();
+            for (Semester semester : semesters) {
+                semesterFilter.getItems().add(semester.getId() + ": " + semester.getSemesterName());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error loading semesters: " + e.getMessage());
+        }
+        semesterFilter.setValue("All Semesters");
+        semesterFilter.setPrefWidth(180);
+        semesterFilter.setOnAction(e -> applyFilters());
+        
+        // Year filter
+        Label yearLabel = new Label("Year:");
+        yearLabel.setFont(FontLoader.getOutfitMedium(14));
+        yearLabel.setTextFill(ColorScheme.DARK_TEXT);
+        
+        yearFilter = new ComboBox<>();
+        yearFilter.getItems().addAll("All Years", "Year 1", "Year 2", "Year 3", "Year 4");
+        yearFilter.setValue("All Years");
+        yearFilter.setPrefWidth(150);
+        yearFilter.setOnAction(e -> applyFilters());
+        
+        filters.getChildren().addAll(deptLabel, departmentFilter, semesterLabel, semesterFilter, yearLabel, yearFilter);
+        
+        return filters;
+    }
+    
+    private void applyFilters() {
+        String selectedDept = departmentFilter != null ? departmentFilter.getValue() : "All Departments";
+        String selectedSemester = semesterFilter != null ? semesterFilter.getValue() : "All Semesters";
+        String selectedYear = yearFilter != null ? yearFilter.getValue() : "All Years";
+        
+        if (allCourses == null) {
+            return;
+        }
+        
+        List<CourseV2> filtered = allCourses.stream()
+            .filter(course -> {
+                // Department filter
+                boolean matchesDept = selectedDept.equals("All Departments") ||
+                    selectedDept.equals(course.getDepartmentId() + ": " + course.getDepartmentName());
+                
+                // Semester filter
+                boolean matchesSemester = selectedSemester.equals("All Semesters") ||
+                    selectedSemester.equals(course.getSemesterId() + ": " + course.getSemesterName());
+                
+                // Year filter
+                boolean matchesYear = selectedYear.equals("All Years") ||
+                    selectedYear.equals("Year " + course.getYearLevel());
+                
+                return matchesDept && matchesSemester && matchesYear;
+            })
+            .collect(java.util.stream.Collectors.toList());
+        
+        displayCourses(filtered);
+    }
+    
+    private void displayCourses(List<CourseV2> courses) {
+        tableRowsContainer.getChildren().clear();
+        
+        if (courses.isEmpty()) {
+            Label emptyLabel = new Label("No courses found matching the filters.");
+            emptyLabel.setFont(FontLoader.getInter(14));
+            emptyLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
+            emptyLabel.setPadding(new Insets(40));
+            emptyLabel.setAlignment(Pos.CENTER);
+            tableRowsContainer.getChildren().add(emptyLabel);
+        } else {
+            for (CourseV2 course : courses) {
+                tableRowsContainer.getChildren().add(createTableRow(course));
+            }
+        }
     }
 
     private VBox buildTableContainer() {
@@ -122,20 +234,9 @@ public class CoursesPageV2 {
     }
 
     private void refreshTableRows() {
-        tableRowsContainer.getChildren().clear();
         try {
-            List<CourseV2> courses = courseDao.getAllCourses();
-            if (courses.isEmpty()) {
-                Label emptyLabel = new Label("No courses found. Click 'Add Course' to create one.");
-                emptyLabel.setFont(FontLoader.getInter(14));
-                emptyLabel.setTextFill(Color.BLACK);
-                emptyLabel.setPadding(new Insets(40, 0, 40, 0));
-                tableRowsContainer.getChildren().add(emptyLabel);
-            } else {
-                for (CourseV2 course : courses) {
-                    tableRowsContainer.getChildren().add(createTableRow(course));
-                }
-            }
+            allCourses = courseDao.getAllCourses();
+            applyFilters();
         } catch (SQLException e) {
             System.err.println("Error loading courses: " + e.getMessage());
         }
