@@ -2,6 +2,8 @@ package com.university.crs.gui;
 
 import com.university.crs.dao.UserDao;
 import com.university.crs.model.User;
+import com.university.crs.util.ValidationUtil;
+import com.university.crs.util.ValidationUtil.ValidationResult;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -28,27 +30,16 @@ public class LoginScreen {
     }
 
     public void show() {
-        // Root container
+        // Root container - centered login form
         StackPane root = new StackPane();
         root.setStyle("-fx-background-color: white;");
+        root.setAlignment(Pos.CENTER);
 
-        // Main split container
-        HBox mainContainer = new HBox();
-        mainContainer.setMaxWidth(1400);
-        mainContainer.setAlignment(Pos.CENTER);
-
-        // Left panel - Login form
-        VBox leftPanel = buildLoginForm();
-        leftPanel.setPrefWidth(700);
-        HBox.setHgrow(leftPanel, Priority.ALWAYS);
-
-        // Right panel - Branding
-        VBox rightPanel = buildBrandingPanel();
-        rightPanel.setPrefWidth(700);
-        HBox.setHgrow(rightPanel, Priority.ALWAYS);
-
-        mainContainer.getChildren().addAll(leftPanel, rightPanel);
-        root.getChildren().add(mainContainer);
+        // Centered login form
+        VBox loginPanel = buildLoginForm();
+        loginPanel.setMaxWidth(500);
+        
+        root.getChildren().add(loginPanel);
 
         Scene scene = new Scene(root, 1400, 800);
         
@@ -132,7 +123,6 @@ public class LoginScreen {
         usernameLabelBox.getChildren().addAll(usernameLabel, requiredStar);
         
         TextField usernameField = new TextField();
-        usernameField.setPromptText("Enter your username");
         usernameField.setPrefHeight(StyleConstants.INPUT_HEIGHT);
         usernameField.setStyle(StyleConstants.input());
         
@@ -161,12 +151,10 @@ public class LoginScreen {
         StackPane passwordContainer = new StackPane();
         
         PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("Enter your password");
         passwordField.setPrefHeight(StyleConstants.INPUT_HEIGHT);
         passwordField.setStyle(StyleConstants.input());
         
         TextField passwordVisible = new TextField();
-        passwordVisible.setPromptText("Enter your password");
         passwordVisible.setPrefHeight(StyleConstants.INPUT_HEIGHT);
         passwordVisible.setStyle(StyleConstants.input());
         passwordVisible.setVisible(false);
@@ -234,7 +222,6 @@ public class LoginScreen {
         
         ComboBox<String> roleComboBox = new ComboBox<>();
         roleComboBox.getItems().addAll("ADMIN", "DEPARTMENT_HEAD", "STUDENT");
-        roleComboBox.setPromptText("Select your role");
         roleComboBox.setPrefHeight(StyleConstants.INPUT_HEIGHT);
         roleComboBox.setMaxWidth(Double.MAX_VALUE);
         roleComboBox.setStyle(StyleConstants.input());
@@ -327,68 +314,22 @@ public class LoginScreen {
         return panel;
     }
 
-    private VBox buildBrandingPanel() {
-        VBox panel = new VBox();
-        panel.setAlignment(Pos.CENTER);
-        panel.setStyle("-fx-background-color: white;");
-        panel.setPadding(new Insets(60));
-
-        VBox content = new VBox(30);
-        content.setAlignment(Pos.CENTER);
-        content.setMaxWidth(500);
-
-        // Logo
-        try {
-            ImageView logo = new ImageView(new Image(getClass().getResourceAsStream("/images/logo2.jpg")));
-            logo.setFitWidth(400);
-            logo.setPreserveRatio(true);
-            content.getChildren().add(logo);
-        } catch (Exception e) {
-            // Fallback if image not found
-            Label logoPlaceholder = new Label("🎓");
-            logoPlaceholder.setFont(FontLoader.getOutfitBold(100));
-            content.getChildren().add(logoPlaceholder);
-        }
-
-        // Company name in Amharic
-        Label amharicName = new Label("ቀለም ሜዳ ቴክኖሎጂስ");
-        amharicName.setFont(FontLoader.getOutfitSemiBold(24));
-        amharicName.setTextFill(ColorScheme.COMPANY_BLUE);
-        amharicName.setStyle("-fx-font-family: 'Nyala', 'Outfit', serif;");
-
-        // Company name in English
-        Label englishName = new Label("Qelem Meda Technologies");
-        englishName.setFont(FontLoader.getOutfitBold(32));
-        englishName.setTextFill(ColorScheme.COMPANY_ORANGE);
-
-        VBox names = new VBox(8);
-        names.setAlignment(Pos.CENTER);
-        names.getChildren().addAll(amharicName, englishName);
-
-        content.getChildren().add(names);
-        panel.getChildren().add(content);
-        return panel;
-    }
-
     private void handleLogin(String username, String password, String role, VBox errorContainer, Label errorLabel) {
         // Hide error
         errorContainer.setVisible(false);
         errorContainer.setManaged(false);
 
         // Validate username
-        if (username.isEmpty()) {
-            showError(errorContainer, errorLabel, "Please enter your username.");
+        ValidationResult usernameResult = ValidationUtil.validateRequired(username, "Username");
+        if (!usernameResult.isValid()) {
+            showError(errorContainer, errorLabel, usernameResult.getErrorMessage());
             return;
         }
 
         // Validate password
-        if (password.isEmpty()) {
-            showError(errorContainer, errorLabel, "Please enter your password.");
-            return;
-        }
-
-        if (password.length() < 6) {
-            showError(errorContainer, errorLabel, "Password must be at least 6 characters long.");
+        ValidationResult passwordResult = ValidationUtil.validatePassword(password);
+        if (!passwordResult.isValid()) {
+            showError(errorContainer, errorLabel, passwordResult.getErrorMessage());
             return;
         }
 

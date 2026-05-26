@@ -125,10 +125,10 @@ public class DatabaseInitializer {
             System.out.println("Seeding semesters...");
             stmt.executeUpdate("""
                 INSERT IGNORE INTO semesters (academic_year_id, semester_code, semester_name, start_date, end_date, is_current) VALUES
-                (1, 'FALL2024', 'Fall 2024', '2024-09-01', '2024-12-20', FALSE),
-                (1, 'SPRING2025', 'Spring 2025', '2025-01-15', '2025-05-15', TRUE)
+                (1, 'SEM1', 'Semester I', '2024-09-01', '2024-12-20', FALSE),
+                (1, 'SEM2', 'Semester II', '2025-01-15', '2025-05-15', TRUE)
             """);
-            System.out.println("✓ Fall 2024 & Spring 2025 semesters seeded");
+            System.out.println("✓ Semester I & Semester II seeded");
 
             // ================================================================
             // REGISTRATION PERIODS TABLE
@@ -152,7 +152,7 @@ public class DatabaseInitializer {
             System.out.println("Seeding registration periods...");
             stmt.executeUpdate("""
                 INSERT IGNORE INTO registration_periods (semester_id, period_name, start_date, end_date, is_active) VALUES
-                (2, 'Spring 2025 Registration', '2024-11-01 00:00:00', '2025-01-10 23:59:59', TRUE)
+                (2, 'Semester II Registration', '2024-11-01 00:00:00', '2025-01-10 23:59:59', TRUE)
             """);
             System.out.println("✓ Registration periods seeded");
 
@@ -333,7 +333,7 @@ public class DatabaseInitializer {
             System.out.println("  1. users (with default admin)");
             System.out.println("  2. departments (5 departments seeded)");
             System.out.println("  3. academic_years (2024-2025 seeded)");
-            System.out.println("  4. semesters (Fall 2024 & Spring 2025 seeded)");
+            System.out.println("  4. semesters (Semester I & Semester II seeded)");
             System.out.println("  5. registration_periods");
             System.out.println("  6. students (legacy)");
             System.out.println("  7. students_v2 (enhanced with auto-generated IDs)");

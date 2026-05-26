@@ -1,6 +1,8 @@
 package com.university.crs.gui;
 
 import com.university.crs.model.User;
+import com.university.crs.util.ValidationUtil;
+import com.university.crs.util.ValidationUtil.ValidationResult;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -204,6 +206,41 @@ public class ProfilePage {
 
         dialog.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
+                // Validate name
+                ValidationResult nameResult = ValidationUtil.validateName(nameField.getText());
+                if (!nameResult.isValid()) {
+                    showAlert("Validation Error", nameResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate email
+                ValidationResult emailResult = ValidationUtil.validateEmail(emailField.getText());
+                if (!emailResult.isValid()) {
+                    showAlert("Validation Error", emailResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate department
+                ValidationResult deptResult = ValidationUtil.validateRequired(deptField.getText(), "Department");
+                if (!deptResult.isValid()) {
+                    showAlert("Validation Error", deptResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate phone (optional but if provided, should be valid)
+                String phone = phoneField.getText().trim();
+                if (!phone.isEmpty()) {
+                    // Basic phone validation: should contain only digits, spaces, hyphens, parentheses, and plus sign
+                    if (!phone.matches("^[\\d\\s\\-()+ ]+$")) {
+                        showAlert("Validation Error", "Phone number can only contain digits, spaces, hyphens, parentheses, and plus sign");
+                        return;
+                    }
+                    if (phone.replaceAll("[^\\d]", "").length() < 10) {
+                        showAlert("Validation Error", "Phone number must contain at least 10 digits");
+                        return;
+                    }
+                }
+                
                 // In a real app, save to database
                 Alert success = new Alert(Alert.AlertType.INFORMATION);
                 success.setTitle("Success");
@@ -212,5 +249,13 @@ public class ProfilePage {
                 success.showAndWait();
             }
         });
+    }
+    
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 }

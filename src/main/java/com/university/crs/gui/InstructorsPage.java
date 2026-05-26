@@ -221,13 +221,10 @@ public class InstructorsPage {
         grid.setPadding(new Insets(20));
 
         TextField nameField = new TextField();
-        nameField.setPromptText("e.g., Dr. John Smith");
         
         TextField emailField = new TextField();
-        emailField.setPromptText("e.g., john.smith@university.edu");
         
         TextField departmentField = new TextField();
-        departmentField.setPromptText("e.g., Computer Science");
 
         grid.add(new Label("Full Name:"), 0, 0);
         grid.add(nameField, 1, 0);

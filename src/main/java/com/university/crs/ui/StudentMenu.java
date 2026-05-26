@@ -63,17 +63,19 @@ public class StudentMenu {
 
     private void addStudent() {
         System.out.println("\n--- Add New Student ---");
-        System.out.print("  Name  : ");
+        System.out.print("  Name       : ");
         String name = scanner.nextLine().trim();
-        System.out.print("  Email : ");
+        System.out.print("  Email      : ");
         String email = scanner.nextLine().trim();
+        System.out.print("  Department : ");
+        String department = scanner.nextLine().trim();
 
-        if (name.isEmpty() || email.isEmpty()) {
-            System.out.println("  [!] Name and email cannot be empty.");
+        if (name.isEmpty() || email.isEmpty() || department.isEmpty()) {
+            System.out.println("  [!] Name, email, and department cannot be empty.");
             return;
         }
         try {
-            studentDao.addStudent(name, email);
+            studentDao.addStudent(name, email, department);
             System.out.println("  [✓] Student added successfully.");
         } catch (SQLException e) {
             if (e.getMessage().contains("Duplicate")) {

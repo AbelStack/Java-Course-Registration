@@ -80,6 +80,31 @@ public class UserDao {
         }
     }
 
+    /**
+     * Create account with explicit approval status and student_id link
+     * Used when admin creates students - they are auto-approved
+     */
+    public void createAccountWithApproval(String username, String password, String role, String fullName, 
+                                         String email, String department, boolean approved, Integer studentV2Id) throws SQLException {
+        String sql = "INSERT INTO users (username, password, role, full_name, email, department, approved, student_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+            stmt.setString(3, role);
+            stmt.setString(4, fullName);
+            stmt.setString(5, email);
+            stmt.setString(6, department);
+            stmt.setBoolean(7, approved);
+            if (studentV2Id != null) {
+                stmt.setInt(8, studentV2Id);
+            } else {
+                stmt.setNull(8, Types.INTEGER);
+            }
+            stmt.executeUpdate();
+        }
+    }
+
     public boolean usernameExists(String username) throws SQLException {
         String sql = "SELECT id FROM users WHERE username = ?";
         try (Connection conn = DatabaseConnection.getConnection();

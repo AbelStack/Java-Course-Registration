@@ -1,8 +1,10 @@
 package com.university.crs.gui;
 
-import com.university.crs.dao.StudentDao;
-import com.university.crs.model.Student;
+import com.university.crs.dao.StudentV2Dao;
+import com.university.crs.model.StudentV2;
 import com.university.crs.model.User;
+import com.university.crs.util.ValidationUtil;
+import com.university.crs.util.ValidationUtil.ValidationResult;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -22,8 +24,8 @@ public class StudentsPage {
 
     private final Stage stage;
     private final User  user;
-    private final StudentDao studentDao = new StudentDao();
-    private List<Student> allStudents;
+    private final StudentV2Dao studentDao = new StudentV2Dao();
+    private List<StudentV2> allStudents;
     private VBox tableRowsContainer;
 
     public StudentsPage(Stage stage, User user) {
@@ -88,7 +90,6 @@ public class StudentsPage {
         );
 
         TextField searchField = new TextField();
-        searchField.setPromptText("Search students...");
         searchField.setPrefHeight(40);
         searchField.setStyle(
             "-fx-background-color: transparent; " +
@@ -129,13 +130,14 @@ public class StudentsPage {
         headerRow.setPadding(new Insets(0, 0, 15, 0));
         headerRow.setStyle("-fx-border-color: " + ColorScheme.SOFT_GRAY_HEX + "; -fx-border-width: 0 0 1 0;");
         
-        Label col1 = createHeaderLabel("Student ID", 120);
-        Label col2 = createHeaderLabel("Name", 250);
-        Label col3 = createHeaderLabel("Email", 300);
-        Label col4 = createHeaderLabel("Department", 150);
-        Label col5 = createHeaderLabel("Actions", 120);
+        Label col1 = createHeaderLabel("Student ID", 150);
+        Label col2 = createHeaderLabel("Name", 200);
+        Label col3 = createHeaderLabel("Email", 250);
+        Label col4 = createHeaderLabel("Department", 180);
+        Label col5 = createHeaderLabel("Year", 80);
+        Label col6 = createHeaderLabel("Actions", 120);
         
-        headerRow.getChildren().addAll(col1, col2, col3, col4, col5);
+        headerRow.getChildren().addAll(col1, col2, col3, col4, col5, col6);
 
         // Table rows container
         tableRowsContainer = new VBox(0);
@@ -158,7 +160,7 @@ public class StudentsPage {
         tableRowsContainer.getChildren().clear();
         try {
             allStudents = studentDao.getAllStudents();
-            for (Student student : allStudents) {
+            for (StudentV2 student : allStudents) {
                 tableRowsContainer.getChildren().add(createTableRow(student));
             }
         } catch (SQLException e) {
@@ -170,28 +172,30 @@ public class StudentsPage {
         tableRowsContainer.getChildren().clear();
         if (allStudents == null) return;
 
-        List<Student> filtered = allStudents.stream()
+        List<StudentV2> filtered = allStudents.stream()
             .filter(s -> searchText == null || searchText.isEmpty() ||
                 s.getName().toLowerCase().contains(searchText.toLowerCase()) ||
                 s.getEmail().toLowerCase().contains(searchText.toLowerCase()) ||
-                String.valueOf(s.getId()).contains(searchText))
+                s.getStudentId().toLowerCase().contains(searchText.toLowerCase()) ||
+                s.getDepartmentName().toLowerCase().contains(searchText.toLowerCase()))
             .collect(Collectors.toList());
 
-        for (Student student : filtered) {
+        for (StudentV2 student : filtered) {
             tableRowsContainer.getChildren().add(createTableRow(student));
         }
     }
 
-    private HBox createTableRow(Student student) {
+    private HBox createTableRow(StudentV2 student) {
         HBox row = new HBox();
         row.setSpacing(20);
         row.setPadding(new Insets(15, 0, 15, 0));
         row.setStyle("-fx-border-color: #f3f4f6; -fx-border-width: 0 0 1 0;");
         
-        Label col1 = createCellLabel("S" + String.format("%03d", student.getId()), 120);
-        Label col2 = createCellLabel(student.getName(), 250);
-        Label col3 = createCellLabel(student.getEmail(), 300);
-        Label col4 = createCellLabel(getDepartment(student), 150);
+        Label col1 = createCellLabel(student.getStudentId(), 150);
+        Label col2 = createCellLabel(student.getName(), 200);
+        Label col3 = createCellLabel(student.getEmail(), 250);
+        Label col4 = createCellLabel(student.getDepartmentName(), 180);
+        Label col5 = createCellLabel("Year " + student.getYearLevel(), 80);
         
         // Actions (Edit and Delete icons)
         HBox actions = new HBox(15);
@@ -242,7 +246,7 @@ public class StudentsPage {
         
         actions.getChildren().addAll(editBtn, deleteBtn);
         
-        row.getChildren().addAll(col1, col2, col3, col4, actions);
+        row.getChildren().addAll(col1, col2, col3, col4, col5, actions);
         
         // Hover effect
         row.setOnMouseEntered(e -> row.setStyle(
@@ -267,13 +271,11 @@ public class StudentsPage {
         return label;
     }
 
-    private String getDepartment(Student student) {
-        // Placeholder - you can add department field to Student model
-        String[] departments = {"CS", "IT", "ECE", "ME", "EE"};
-        return departments[student.getId() % departments.length];
+    private String getDepartment(StudentV2 student) {
+        return student.getDepartmentName();
     }
 
-    private void showEditStudentDialog(Student student) {
+    private void showEditStudentDialog(StudentV2 student) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Edit Student");
         dialog.setHeaderText("Update student details");
@@ -285,27 +287,49 @@ public class StudentsPage {
 
         TextField nameField = new TextField(student.getName());
         TextField emailField = new TextField(student.getEmail());
+        ComboBox<Integer> yearCombo = new ComboBox<>();
+        yearCombo.getItems().addAll(1, 2, 3, 4, 5);
+        yearCombo.setValue(student.getYearLevel());
 
         grid.add(new Label("Full Name:"), 0, 0);
         grid.add(nameField, 1, 0);
         grid.add(new Label("Email:"), 0, 1);
         grid.add(emailField, 1, 1);
+        grid.add(new Label("Year Level:"), 0, 2);
+        grid.add(yearCombo, 1, 2);
 
         dialog.getDialogPane().setContent(grid);
         dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
 
         dialog.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
+                // Validate name
+                ValidationResult nameResult = ValidationUtil.validateName(nameField.getText());
+                if (!nameResult.isValid()) {
+                    showAlert("Validation Error", nameResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate email
+                ValidationResult emailResult = ValidationUtil.validateEmail(emailField.getText());
+                if (!emailResult.isValid()) {
+                    showAlert("Validation Error", emailResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate year level
+                Integer yearLevel = yearCombo.getValue();
+                ValidationResult yearResult = ValidationUtil.validateYearLevel(yearLevel);
+                if (!yearResult.isValid()) {
+                    showAlert("Validation Error", yearResult.getErrorMessage());
+                    return;
+                }
+
                 try {
-                    String name = nameField.getText().trim();
-                    String email = emailField.getText().trim();
+                    String name = nameResult.getStringValue();
+                    String email = emailResult.getStringValue();
 
-                    if (name.isEmpty() || email.isEmpty()) {
-                        showAlert("Error", "Name and email are required.");
-                        return;
-                    }
-
-                    studentDao.updateStudent(student.getId(), name, email);
+                    studentDao.updateStudent(student.getId(), name, email, student.getDepartmentId(), yearLevel);
                     refreshTableRows();
                 } catch (SQLException e) {
                     showAlert("Error", "Failed to update student: " + e.getMessage());
@@ -314,7 +338,7 @@ public class StudentsPage {
         });
     }
 
-    private void deleteStudent(Student student) {
+    private void deleteStudent(StudentV2 student) {
         Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
         confirm.setTitle("Delete Student");
         confirm.setHeaderText("Are you sure you want to delete this student?");
@@ -351,26 +375,20 @@ public class StudentsPage {
         grid.setPadding(new Insets(20));
 
         TextField nameField = new TextField();
-        nameField.setPromptText("e.g., John Doe");
         
         TextField emailField = new TextField();
-        emailField.setPromptText("e.g., john.doe@university.edu");
         
         ComboBox<String> departmentCombo = new ComboBox<>();
         departmentCombo.getItems().addAll("Computer Science", "Software Engineering", "Information Technology", "Electrical Engineering", "Mechanical Engineering");
-        departmentCombo.setPromptText("Select Department");
         
         ComboBox<String> yearCombo = new ComboBox<>();
         yearCombo.getItems().addAll("2024", "2025", "2026", "2027");
-        yearCombo.setPromptText("Select Year");
         
         TextField usernameField = new TextField();
-        usernameField.setPromptText("Auto-generated (e.g., SWE-2026-001)");
         usernameField.setEditable(false);
         usernameField.setStyle("-fx-background-color: #f0f0f0;");
         
         PasswordField passwordField = new PasswordField();
-        passwordField.setPromptText("Initial password");
 
         grid.add(new Label("Full Name:"), 0, 0);
         grid.add(nameField, 1, 0);
@@ -397,37 +415,72 @@ public class StudentsPage {
         // Auto-generate student ID when department and year are selected
         departmentCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && yearCombo.getValue() != null) {
-                String deptCode = getDepartmentCode(newVal);
-                String year = yearCombo.getValue();
-                // TODO: Get next sequence number from database
-                usernameField.setText(deptCode + "-" + year + "-001");
+                try {
+                    String deptCode = getDepartmentCode(newVal);
+                    String year = yearCombo.getValue();
+                    int nextSeq = studentDao.getNextSequenceNumber(deptCode, year);
+                    usernameField.setText(deptCode + "-" + year + "-" + String.format("%03d", nextSeq));
+                } catch (SQLException e) {
+                    usernameField.setText(getDepartmentCode(newVal) + "-" + yearCombo.getValue() + "-001");
+                }
             }
         });
         
         yearCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null && departmentCombo.getValue() != null) {
-                String deptCode = getDepartmentCode(departmentCombo.getValue());
-                // TODO: Get next sequence number from database
-                usernameField.setText(deptCode + "-" + newVal + "-001");
+                try {
+                    String deptCode = getDepartmentCode(departmentCombo.getValue());
+                    int nextSeq = studentDao.getNextSequenceNumber(deptCode, newVal);
+                    usernameField.setText(deptCode + "-" + newVal + "-" + String.format("%03d", nextSeq));
+                } catch (SQLException e) {
+                    usernameField.setText(getDepartmentCode(departmentCombo.getValue()) + "-" + newVal + "-001");
+                }
             }
         });
 
         dialog.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                String name = nameField.getText().trim();
-                String email = emailField.getText().trim();
-                String department = departmentCombo.getValue();
+                // Validate name
+                ValidationResult nameResult = ValidationUtil.validateName(nameField.getText());
+                if (!nameResult.isValid()) {
+                    showAlert("Validation Error", nameResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate email
+                ValidationResult emailResult = ValidationUtil.validateEmail(emailField.getText());
+                if (!emailResult.isValid()) {
+                    showAlert("Validation Error", emailResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate department selection
+                String departmentName = departmentCombo.getValue();
+                if (departmentName == null || departmentName.isEmpty()) {
+                    showAlert("Validation Error", "Please select a department");
+                    return;
+                }
+                
+                // Validate year selection
                 String year = yearCombo.getValue();
-                String studentId = usernameField.getText().trim();
-                String password = passwordField.getText().trim();
-
-                if (name.isEmpty() || email.isEmpty() || department == null || year == null || password.isEmpty()) {
-                    showAlert("Error", "All fields are required.");
+                if (year == null || year.isEmpty()) {
+                    showAlert("Validation Error", "Please select a year");
+                    return;
+                }
+                
+                // Validate password
+                ValidationResult passwordResult = ValidationUtil.validatePassword(passwordField.getText());
+                if (!passwordResult.isValid()) {
+                    showAlert("Validation Error", passwordResult.getErrorMessage());
                     return;
                 }
 
+                String name = nameResult.getStringValue();
+                String email = emailResult.getStringValue();
+                String studentId = usernameField.getText().trim();
+                String password = passwordResult.getStringValue();
+
                 try {
-                    // Create user account for login
                     com.university.crs.dao.UserDao userDao = new com.university.crs.dao.UserDao();
                     
                     // Check if username already exists
@@ -436,19 +489,34 @@ public class StudentsPage {
                         return;
                     }
                     
-                    // Create user account (username = studentId, role = STUDENT, approved = true since admin creates it)
-                    userDao.createAccount(studentId, password, "STUDENT", name, email, department);
+                    // Get department ID
+                    int departmentId = studentDao.getDepartmentIdByName(departmentName);
                     
-                    // Also add to students table
-                    studentDao.addStudent(name, email);
+                    // Calculate year level based on current year and enrollment year
+                    int currentYear = java.time.Year.now().getValue();
+                    int enrollmentYear = Integer.parseInt(year);
+                    int yearLevel = Math.max(1, currentYear - enrollmentYear + 1);
                     
-                    Alert success = new Alert(Alert.AlertType.INFORMATION);
-                    success.setTitle("Success");
-                    success.setHeaderText("Student created successfully!");
-                    success.setContentText("Student ID: " + studentId + "\nPassword: " + password + "\n\nPlease provide these credentials to the student.");
-                    success.showAndWait();
+                    // First, add to students_v2 table
+                    int studentV2Id = studentDao.addStudent(studentId, name, email, departmentId, yearLevel);
                     
-                    refreshTableRows();
+                    if (studentV2Id > 0) {
+                        // Then create user account (auto-approved since admin creates it)
+                        userDao.createAccountWithApproval(studentId, password, "STUDENT", name, email, departmentName, true, studentV2Id);
+                        
+                        Alert success = new Alert(Alert.AlertType.INFORMATION);
+                        success.setTitle("Success");
+                        success.setHeaderText("Student created successfully!");
+                        success.setContentText("Student ID: " + studentId + 
+                                             "\nPassword: " + password + 
+                                             "\nStatus: Approved (Auto-approved by admin)" +
+                                             "\n\nPlease provide these credentials to the student.");
+                        success.showAndWait();
+                        
+                        refreshTableRows();
+                    } else {
+                        showAlert("Error", "Failed to create student record.");
+                    }
                 } catch (SQLException e) {
                     showAlert("Database Error", "Failed to create student: " + e.getMessage());
                     e.printStackTrace();

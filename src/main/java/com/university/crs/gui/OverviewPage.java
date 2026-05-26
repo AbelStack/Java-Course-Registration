@@ -1,9 +1,5 @@
 package com.university.crs.gui;
 
-import com.university.crs.dao.CourseDao;
-import com.university.crs.dao.EnrollmentDao;
-import com.university.crs.dao.StudentDao;
-import com.university.crs.dao.UserDao;
 import com.university.crs.model.User;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -29,30 +25,40 @@ public class OverviewPage {
 
     public Node build() {
         VBox page = new VBox(StyleConstants.SPACING_XL);
-        page.setPadding(new Insets(0));
-        page.setStyle("-fx-background-color: transparent;");
+        page.setPadding(new Insets(40, 50, 40, 50));
+        page.setStyle("-fx-background-color: " + ColorScheme.BACKGROUND_HEX + ";");
 
         // Page header
         VBox header = new VBox(4);
         Label heading = new Label("Admin Dashboard");
-        heading.setFont(FontLoader.getOutfitSemiBold(24));
-        heading.setTextFill(ColorScheme.GRAY_900);
+        heading.setFont(FontLoader.getPoppinsBold(28));
+        heading.setTextFill(ColorScheme.DARK_TEXT);
         
         Label subtitle = new Label("Overview of your course registration system");
         subtitle.setFont(FontLoader.getOutfit(14));
-        subtitle.setTextFill(Color.BLACK);
+        subtitle.setTextFill(ColorScheme.MEDIUM_TEXT);
         
         header.getChildren().addAll(heading, subtitle);
 
         // Fetch stats
-        int totalStudents = 0, totalCourses = 0, totalEnrollments = 0, totalDepartments = 0;
+        int totalStudents = 0, totalCourses = 0, totalEnrollments = 0, totalDepartments = 0, pendingApprovals = 0;
         try {
-            totalStudents = new StudentDao().getAllStudents().size();
-            totalCourses = new CourseDao().getAllCourses().size();
-            totalEnrollments = new EnrollmentDao().getEnrollmentSummary().size();
-            // TODO: Add DepartmentDao to get total departments
-            totalDepartments = 0; // Placeholder
-        } catch (SQLException ignored) {}
+            // Use StudentV2Dao for enhanced students
+            totalStudents = new com.university.crs.dao.StudentV2Dao().getAllStudents().size();
+            
+            // Use CourseV2Dao for enhanced courses
+            totalCourses = new com.university.crs.dao.CourseV2Dao().getAllCourses().size();
+            
+            // Use RegistrationDao for enhanced enrollments
+            com.university.crs.dao.RegistrationDao regDao = new com.university.crs.dao.RegistrationDao();
+            totalEnrollments = regDao.getAllRegistrations().size();
+            pendingApprovals = regDao.getPendingRegistrations().size();
+            
+            // Use DepartmentDao for departments
+            totalDepartments = new com.university.crs.dao.DepartmentDao().getAllDepartments().size();
+        } catch (SQLException e) {
+            System.err.println("Error fetching dashboard stats: " + e.getMessage());
+        }
 
         // KPI Cards Grid
         GridPane cardsGrid = new GridPane();
@@ -67,18 +73,24 @@ public class OverviewPage {
             cardsGrid.getColumnConstraints().add(col);
         }
 
-        // Add KPI cards
+        // First row - Main stats
         cardsGrid.add(createKPICard("Total Students", String.valueOf(totalStudents), 
-            "registered students", Color.BLACK, false), 0, 0);
+            "registered students", ColorScheme.GRAY_600, false), 0, 0);
         
         cardsGrid.add(createKPICard("Total Departments", String.valueOf(totalDepartments), 
-            "academic departments", Color.BLACK, false), 1, 0);
+            "academic departments", ColorScheme.GRAY_600, false), 1, 0);
         
         cardsGrid.add(createKPICard("Total Courses", String.valueOf(totalCourses), 
-            "available courses", Color.BLACK, false), 2, 0);
+            "available courses", ColorScheme.GRAY_600, false), 2, 0);
         
         cardsGrid.add(createKPICard("Total Enrollments", String.valueOf(totalEnrollments), 
-            "course registrations", Color.BLACK, false), 3, 0);
+            "course registrations", ColorScheme.GRAY_600, false), 3, 0);
+        
+        // Second row - Pending approvals (spans 2 columns)
+        VBox pendingCard = createKPICard("Pending Approvals", String.valueOf(pendingApprovals), 
+            "registrations awaiting approval", ColorScheme.ERROR_600, true);
+        GridPane.setColumnSpan(pendingCard, 2);
+        cardsGrid.add(pendingCard, 0, 1);
 
         // Recent Registrations Section
         VBox recentSection = buildRecentRegistrations();
@@ -87,7 +99,7 @@ public class OverviewPage {
         
         ScrollPane scrollPane = new ScrollPane(page);
         scrollPane.setFitToWidth(true);
-        scrollPane.setStyle("-fx-background: transparent; -fx-background-color: transparent;");
+        scrollPane.setStyle("-fx-background: " + ColorScheme.BACKGROUND_HEX + "; -fx-background-color: " + ColorScheme.BACKGROUND_HEX + ";");
         scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
         
@@ -111,7 +123,7 @@ public class OverviewPage {
         
         Label titleLabel = new Label(title);
         titleLabel.setFont(FontLoader.getOutfitMedium(14));
-        titleLabel.setTextFill(Color.BLACK);
+        titleLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
         
         headerRow.getChildren().add(titleLabel);
         
@@ -139,8 +151,8 @@ public class OverviewPage {
         
         // Value (large number)
         Label valueLabel = new Label(value);
-        valueLabel.setFont(FontLoader.getOutfitSemiBold(36));
-        valueLabel.setTextFill(ColorScheme.GRAY_900);
+        valueLabel.setFont(FontLoader.getPoppinsBold(36));
+        valueLabel.setTextFill(ColorScheme.DARK_TEXT);
         
         // Subtitle
         Label subtitleLabel = new Label(subtitle);
@@ -172,7 +184,7 @@ public class OverviewPage {
         
         Label sectionTitle = new Label("System Overview");
         sectionTitle.setFont(FontLoader.getOutfitSemiBold(18));
-        sectionTitle.setTextFill(ColorScheme.GRAY_900);
+        sectionTitle.setTextFill(ColorScheme.DARK_TEXT);
         
         sectionHeader.getChildren().add(sectionTitle);
 
@@ -184,11 +196,11 @@ public class OverviewPage {
         // Welcome message
         Label welcomeLabel = new Label("Welcome to the Course Registration System");
         welcomeLabel.setFont(FontLoader.getOutfitSemiBold(16));
-        welcomeLabel.setTextFill(ColorScheme.GRAY_900);
+        welcomeLabel.setTextFill(ColorScheme.DARK_TEXT);
         
         Label descLabel = new Label("Manage courses, instructors, students, and enrollments from this dashboard.");
         descLabel.setFont(FontLoader.getOutfit(14));
-        descLabel.setTextFill(Color.BLACK);
+        descLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
         descLabel.setWrapText(true);
 
         // Quick actions grid
@@ -235,11 +247,11 @@ public class OverviewPage {
         
         Label titleLabel = new Label(title);
         titleLabel.setFont(FontLoader.getOutfitSemiBold(14));
-        titleLabel.setTextFill(ColorScheme.GRAY_900);
+        titleLabel.setTextFill(ColorScheme.DARK_TEXT);
         
         Label descLabel = new Label(description);
         descLabel.setFont(FontLoader.getOutfit(12));
-        descLabel.setTextFill(Color.BLACK);
+        descLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
         descLabel.setWrapText(true);
         
         card.getChildren().addAll(iconLabel, titleLabel, descLabel);

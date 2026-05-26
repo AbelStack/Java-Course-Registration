@@ -26,6 +26,9 @@ public class ValidationUtil {
     /** Name: Letters, spaces, hyphens, apostrophes only (2-50 chars) */
     private static final Pattern NAME_PATTERN = Pattern.compile("^[A-Za-z\\s'-]{2,50}$");
     
+    /** Department Code: 2-5 uppercase letters only (e.g., CS, EE, MATH) */
+    private static final Pattern DEPT_CODE_PATTERN = Pattern.compile("^[A-Z]{2,5}$");
+    
     /** Password: At least 6 characters (can be strengthened) */
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^.{6,}$");
     
@@ -33,6 +36,19 @@ public class ValidationUtil {
     private static final Pattern STRONG_PASSWORD_PATTERN = Pattern.compile(
         "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#])[A-Za-z\\d@$!%*?&#]{8,}$"
     );
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // CREDIT LIMITS
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /** Maximum credits a student can register for in one semester */
+    public static final int MAX_STUDENT_CREDITS = 30;
+    
+    /** Maximum credits a single course can have */
+    public static final int MAX_COURSE_CREDITS = 30;
+    
+    /** Minimum credits for a course */
+    public static final int MIN_COURSE_CREDITS = 1;
     
     // ═══════════════════════════════════════════════════════════════════
     // COURSE VALIDATION
@@ -118,18 +134,35 @@ public class ValidationUtil {
         try {
             int credits = Integer.parseInt(creditsStr.trim());
             
-            if (credits < 1) {
-                return ValidationResult.error("Credits must be at least 1");
+            if (credits < MIN_COURSE_CREDITS) {
+                return ValidationResult.error("Credits must be at least " + MIN_COURSE_CREDITS);
             }
             
-            if (credits > 12) {
-                return ValidationResult.error("Credits cannot exceed 12");
+            if (credits > MAX_COURSE_CREDITS) {
+                return ValidationResult.error("Credits cannot exceed " + MAX_COURSE_CREDITS + " per course");
             }
             
             return ValidationResult.success(credits);
         } catch (NumberFormatException e) {
             return ValidationResult.error("Credits must be a valid number");
         }
+    }
+    
+    /**
+     * Validate total credits for student registration.
+     * Checks if adding new credits would exceed the maximum allowed.
+     */
+    public static ValidationResult validateStudentTotalCredits(int currentCredits, int newCredits) {
+        int totalCredits = currentCredits + newCredits;
+        
+        if (totalCredits > MAX_STUDENT_CREDITS) {
+            return ValidationResult.error(
+                String.format("Cannot register. Total credits (%d) would exceed maximum allowed (%d credits per semester). Current: %d, Attempting to add: %d",
+                    totalCredits, MAX_STUDENT_CREDITS, currentCredits, newCredits)
+            );
+        }
+        
+        return ValidationResult.success(totalCredits);
     }
     
     /**
@@ -192,6 +225,128 @@ public class ValidationUtil {
         
         if (!EMAIL_PATTERN.matcher(trimmed).matches()) {
             return ValidationResult.error("Please enter a valid email address");
+        }
+        
+        return ValidationResult.success(trimmed);
+    }
+    
+    /**
+     * Validate year level (1-5).
+     */
+    public static ValidationResult validateYearLevel(Integer yearLevel) {
+        if (yearLevel == null) {
+            return ValidationResult.error("Year level is required");
+        }
+        
+        if (yearLevel < 1 || yearLevel > 5) {
+            return ValidationResult.error("Year level must be between 1 and 5");
+        }
+        
+        return ValidationResult.success(yearLevel);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // DEPARTMENT VALIDATION
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /**
+     * Validate department code.
+     * Must be 2-5 uppercase letters only (e.g., CS, EE, MATH).
+     */
+    public static ValidationResult validateDepartmentCode(String code) {
+        if (code == null || code.trim().isEmpty()) {
+            return ValidationResult.error("Department code is required");
+        }
+        
+        String trimmed = code.trim().toUpperCase();
+        
+        if (!DEPT_CODE_PATTERN.matcher(trimmed).matches()) {
+            return ValidationResult.error(
+                "Department code must be 2-5 uppercase letters only (e.g., CS, EE, MATH)"
+            );
+        }
+        
+        return ValidationResult.success(trimmed);
+    }
+    
+    /**
+     * Validate department name.
+     */
+    public static ValidationResult validateDepartmentName(String name) {
+        if (name == null || name.trim().isEmpty()) {
+            return ValidationResult.error("Department name is required");
+        }
+        
+        String trimmed = name.trim();
+        
+        if (trimmed.length() < 3) {
+            return ValidationResult.error("Department name must be at least 3 characters");
+        }
+        
+        if (trimmed.length() > 100) {
+            return ValidationResult.error("Department name must not exceed 100 characters");
+        }
+        
+        // Allow letters, spaces, ampersands, hyphens
+        if (!Pattern.matches("^[A-Za-z\\s&-]+$", trimmed)) {
+            return ValidationResult.error("Department name can only contain letters, spaces, ampersands, and hyphens");
+        }
+        
+        return ValidationResult.success(trimmed);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════
+    // GENERAL VALIDATION
+    // ═══════════════════════════════════════════════════════════════════
+    
+    /**
+     * Validate required field (not null or empty).
+     */
+    public static ValidationResult validateRequired(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            return ValidationResult.error(fieldName + " is required");
+        }
+        
+        return ValidationResult.success(value.trim());
+    }
+    
+    /**
+     * Validate positive integer.
+     */
+    public static ValidationResult validatePositiveInteger(String value, String fieldName) {
+        if (value == null || value.trim().isEmpty()) {
+            return ValidationResult.error(fieldName + " is required");
+        }
+        
+        try {
+            int number = Integer.parseInt(value.trim());
+            
+            if (number <= 0) {
+                return ValidationResult.error(fieldName + " must be a positive number");
+            }
+            
+            return ValidationResult.success(number);
+        } catch (NumberFormatException e) {
+            return ValidationResult.error(fieldName + " must be a valid number");
+        }
+    }
+    
+    /**
+     * Validate text length.
+     */
+    public static ValidationResult validateLength(String value, String fieldName, int minLength, int maxLength) {
+        if (value == null || value.trim().isEmpty()) {
+            return ValidationResult.error(fieldName + " is required");
+        }
+        
+        String trimmed = value.trim();
+        
+        if (trimmed.length() < minLength) {
+            return ValidationResult.error(fieldName + " must be at least " + minLength + " characters");
+        }
+        
+        if (trimmed.length() > maxLength) {
+            return ValidationResult.error(fieldName + " must not exceed " + maxLength + " characters");
         }
         
         return ValidationResult.success(trimmed);
