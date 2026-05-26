@@ -247,7 +247,7 @@ public class CoursesPage {
         
         // Semester dropdown
         ComboBox<String> semesterCombo = new ComboBox<>();
-        semesterCombo.getItems().addAll("Fall", "Spring", "Summer");
+        semesterCombo.getItems().addAll("Semester I", "Semester II");
         semesterCombo.setPromptText("Select Semester");
         
         // Prerequisite field (optional)

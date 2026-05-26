@@ -194,7 +194,7 @@ public class RegistrationManagementPage {
         yearField.setPromptText("e.g., 2024-2025");
         
         ComboBox<String> semesterCombo = new ComboBox<>();
-        semesterCombo.getItems().addAll("Fall", "Spring", "Summer");
+        semesterCombo.getItems().addAll("Semester I", "Semester II");
         semesterCombo.setPromptText("Select Semester");
 
         grid.add(new Label("Academic Year:"), 0, 0);

@@ -355,7 +355,7 @@ public class LoginScreen {
                 } else if (user.isDepartmentHead()) {
                     new DepartmentHeadDashboard(stage, user).show();
                 } else if (user.isStudent()) {
-                    new StudentPortal(stage, user).show();
+                    new StudentDashboard(stage, user).show();
                 } else {
                     showError(errorContainer, errorLabel, "Unknown user role. Please contact administrator.");
                 }

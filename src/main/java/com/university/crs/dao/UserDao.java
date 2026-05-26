@@ -164,4 +164,17 @@ public class UserDao {
             return stmt.executeUpdate() > 0;
         }
     }
+
+    /**
+     * Update user password
+     */
+    public boolean updatePassword(int userId, String newPassword) throws SQLException {
+        String sql = "UPDATE users SET password = ? WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, newPassword);
+            stmt.setInt(2, userId);
+            return stmt.executeUpdate() > 0;
+        }
+    }
 }

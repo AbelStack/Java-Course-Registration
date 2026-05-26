@@ -21,6 +21,7 @@ public class Registration {
     private Integer processedBy;
     private String processedByName;
     private String notes;
+    private int credits; // Course credits
 
     public Registration(int id, int studentId, String studentName, String studentIdCode,
                        int courseId, String courseCode, String courseTitle,
@@ -61,6 +62,10 @@ public class Registration {
     public Integer getProcessedBy() { return processedBy; }
     public String getProcessedByName() { return processedByName; }
     public String getNotes() { return notes; }
+    public int getCredits() { return credits; }
+
+    // Setters
+    public void setCredits(int credits) { this.credits = credits; }
 
     @Override
     public String toString() {

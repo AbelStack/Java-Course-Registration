@@ -33,7 +33,15 @@ public class ColorScheme {
     public static final Color GRAY_950 = Color.web("#0c111d");
     
     // ── Status Colors ─────────────────────────────────────────────────────
+    public static final Color PRIMARY_50 = Color.web("#ecf3ff");
+    public static final Color PRIMARY_500 = Color.web("#465fff");
+    public static final Color PRIMARY_600 = Color.web("#3641f5");
+    public static final Color PRIMARY_700 = Color.web("#2a33cc");
+    
+    public static final Color INFO_500 = Color.web("#0ea5e9");
+    
     public static final Color SUCCESS_50 = Color.web("#ecfdf3");
+    public static final Color SUCCESS_200 = Color.web("#a7f3d0");
     public static final Color SUCCESS_500 = Color.web("#12b76a");
     public static final Color SUCCESS_600 = Color.web("#039855");
     public static final Color SUCCESS_700 = Color.web("#027a48");
@@ -73,7 +81,15 @@ public class ColorScheme {
     public static final String GRAY_800_HEX = "#1d2939";
     public static final String GRAY_900_HEX = "#101828";
     
+    public static final String PRIMARY_50_HEX = "#ecf3ff";
+    public static final String PRIMARY_500_HEX = "#465fff";
+    public static final String PRIMARY_600_HEX = "#3641f5";
+    public static final String PRIMARY_700_HEX = "#2a33cc";
+    
+    public static final String INFO_500_HEX = "#0ea5e9";
+    
     public static final String SUCCESS_50_HEX = "#ecfdf3";
+    public static final String SUCCESS_200_HEX = "#a7f3d0";
     public static final String SUCCESS_500_HEX = "#12b76a";
     public static final String SUCCESS_600_HEX = "#039855";
     public static final String SUCCESS_700_HEX = "#027a48";
