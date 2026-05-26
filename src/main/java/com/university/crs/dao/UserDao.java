@@ -117,6 +117,84 @@ public class UserDao {
     }
     
     /**
+     * Check if email exists
+     */
+    public boolean emailExists(String email) throws SQLException {
+        String sql = "SELECT id FROM users WHERE email = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+    
+    /**
+     * Get department head by department name
+     */
+    public User getDepartmentHead(String departmentName) throws SQLException {
+        String sql = "SELECT id, username, role, student_id, approved, full_name, email, department FROM users WHERE role = 'DEPARTMENT_HEAD' AND department = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, departmentName);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int sid = rs.getInt("student_id");
+                    return new User(
+                            rs.getInt("id"),
+                            rs.getString("username"),
+                            rs.getString("role"),
+                            rs.wasNull() ? null : sid,
+                            rs.getBoolean("approved"),
+                            rs.getString("full_name"),
+                            rs.getString("email"),
+                            rs.getString("department"));
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * Create a new user (generic method)
+     */
+    public int createUser(String username, String password, String role, String fullName, String email, String department) throws SQLException {
+        String sql = "INSERT INTO users (username, password, role, full_name, email, department, approved) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, username);
+            stmt.setString(2, password);
+            stmt.setString(3, role);
+            stmt.setString(4, fullName);
+            stmt.setString(5, email);
+            stmt.setString(6, department);
+            // Auto-approve admins and department heads
+            stmt.setBoolean(7, "ADMIN".equals(role) || "DEPARTMENT_HEAD".equals(role));
+            stmt.executeUpdate();
+            
+            try (ResultSet rs = stmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return -1;
+    }
+    
+    /**
+     * Delete a user by ID
+     */
+    public boolean deleteUser(int userId) throws SQLException {
+        String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            return stmt.executeUpdate() > 0;
+        }
+    }
+    
+    /**
      * Get all pending student accounts (not approved yet)
      */
     public List<User> getPendingStudents() throws SQLException {
