@@ -297,7 +297,7 @@ public class DeptHeadRegistrationApprovalsPage {
             courseBox.getChildren().addAll(courseLabel, courseDetails);
             
             // Request date
-            Label dateLabel = new Label("Requested: " + registration.getRequestedAt().toLocalDateTime().toLocalDate());
+            Label dateLabel = new Label("Requested: " + registration.getRequestedAt().toLocalDate());
             dateLabel.setFont(FontLoader.getOutfit(13));
             dateLabel.setTextFill(ColorScheme.MEDIUM_TEXT);
             

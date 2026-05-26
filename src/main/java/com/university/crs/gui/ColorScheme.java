@@ -103,6 +103,7 @@ public class ColorScheme {
     
     public static final String WARNING_50_HEX = "#fffaeb";
     public static final String WARNING_500_HEX = "#f79009";
+    public static final String WARNING_600_HEX = "#dc6803";
     public static final String WARNING_700_HEX = "#b54708";
     
     // ── Legacy Compatibility ──────────────────────────────────────────────
