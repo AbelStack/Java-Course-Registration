@@ -307,6 +307,7 @@ public class CoursesPageV2 {
         ComboBox<Department> deptCombo = new ComboBox<>();
         ComboBox<Instructor> instrCombo = new ComboBox<>();
         instrCombo.getItems().add(null); // Allow no instructor
+        instrCombo.setPromptText("Select instructor (optional)");
         
         ComboBox<Semester> semesterCombo = new ComboBox<>();
         
@@ -318,14 +319,31 @@ public class CoursesPageV2 {
         yearLevelCombo.setValue(1);
 
         // Load data
+        List<Instructor> allInstructors = new java.util.ArrayList<>();
         try {
             deptCombo.getItems().addAll(departmentDao.getAllDepartments());
-            List<Instructor> instructors = instructorDao.getAllInstructors();
-            instrCombo.getItems().addAll(instructors);
+            allInstructors.addAll(instructorDao.getAllInstructors());
             semesterCombo.getItems().addAll(semesterDao.getAllSemesters());
         } catch (SQLException e) {
             showAlert("Error", "Failed to load data: " + e.getMessage());
         }
+
+        // Filter instructors when department changes
+        deptCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            instrCombo.getItems().clear();
+            instrCombo.getItems().add(null); // Always allow no instructor
+            
+            if (newVal != null) {
+                // Filter instructors by selected department
+                for (Instructor instructor : allInstructors) {
+                    if (instructor.getDepartment().equals(newVal.getName())) {
+                        instrCombo.getItems().add(instructor);
+                    }
+                }
+            }
+            
+            instrCombo.setValue(null); // Reset selection
+        });
 
         grid.add(new Label("Course Code:"), 0, 0);
         grid.add(codeField, 1, 0);
@@ -433,8 +451,206 @@ public class CoursesPageV2 {
     }
 
     private void showEditCourseDialog(CourseV2 course) {
-        // Similar to add but with pre-filled values
-        showAlert("Info", "Edit functionality - similar to add dialog with pre-filled values");
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Edit Course");
+        dialog.setHeaderText("Update course details");
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(15);
+        grid.setPadding(new Insets(20));
+
+        TextField codeField = new TextField(course.getCourseCode());
+        TextField titleField = new TextField(course.getTitle());
+        
+        TextArea descField = new TextArea(course.getDescription() != null ? course.getDescription() : "");
+        descField.setPrefRowCount(3);
+        
+        ComboBox<Department> deptCombo = new ComboBox<>();
+        ComboBox<Instructor> instrCombo = new ComboBox<>();
+        instrCombo.getItems().add(null); // Allow no instructor
+        instrCombo.setPromptText("Select instructor (optional)");
+        
+        ComboBox<Semester> semesterCombo = new ComboBox<>();
+        
+        TextField creditsField = new TextField(String.valueOf(course.getCredits()));
+        TextField capacityField = new TextField(String.valueOf(course.getCapacity()));
+        
+        ComboBox<Integer> yearLevelCombo = new ComboBox<>();
+        yearLevelCombo.getItems().addAll(1, 2, 3, 4, 5);
+        yearLevelCombo.setValue(course.getYearLevel());
+
+        // Load data
+        List<Instructor> allInstructors = new java.util.ArrayList<>();
+        Department selectedDept = null;
+        try {
+            List<Department> departments = departmentDao.getAllDepartments();
+            deptCombo.getItems().addAll(departments);
+            
+            // Find and set current department
+            for (Department dept : departments) {
+                if (dept.getId() == course.getDepartmentId()) {
+                    deptCombo.setValue(dept);
+                    selectedDept = dept;
+                    break;
+                }
+            }
+            
+            allInstructors.addAll(instructorDao.getAllInstructors());
+            
+            // Filter instructors by current department
+            if (selectedDept != null) {
+                for (Instructor instructor : allInstructors) {
+                    if (instructor.getDepartment().equals(selectedDept.getName())) {
+                        instrCombo.getItems().add(instructor);
+                    }
+                }
+            }
+            
+            // Set current instructor
+            if (course.getInstructorId() != null) {
+                for (Instructor instructor : instrCombo.getItems()) {
+                    if (instructor != null && instructor.getId() == course.getInstructorId()) {
+                        instrCombo.setValue(instructor);
+                        break;
+                    }
+                }
+            }
+            
+            List<Semester> semesters = semesterDao.getAllSemesters();
+            semesterCombo.getItems().addAll(semesters);
+            
+            // Set current semester
+            for (Semester semester : semesters) {
+                if (semester.getId() == course.getSemesterId()) {
+                    semesterCombo.setValue(semester);
+                    break;
+                }
+            }
+        } catch (SQLException e) {
+            showAlert("Error", "Failed to load data: " + e.getMessage());
+        }
+
+        // Filter instructors when department changes
+        deptCombo.valueProperty().addListener((obs, oldVal, newVal) -> {
+            instrCombo.getItems().clear();
+            instrCombo.getItems().add(null); // Always allow no instructor
+            
+            if (newVal != null) {
+                // Filter instructors by selected department
+                for (Instructor instructor : allInstructors) {
+                    if (instructor.getDepartment().equals(newVal.getName())) {
+                        instrCombo.getItems().add(instructor);
+                    }
+                }
+            }
+            
+            instrCombo.setValue(null); // Reset selection
+        });
+
+        grid.add(new Label("Course Code:"), 0, 0);
+        grid.add(codeField, 1, 0);
+        grid.add(new Label("Title:"), 0, 1);
+        grid.add(titleField, 1, 1);
+        grid.add(new Label("Description:"), 0, 2);
+        grid.add(descField, 1, 2);
+        grid.add(new Label("Department:"), 0, 3);
+        grid.add(deptCombo, 1, 3);
+        grid.add(new Label("Instructor:"), 0, 4);
+        grid.add(instrCombo, 1, 4);
+        grid.add(new Label("Semester:"), 0, 5);
+        grid.add(semesterCombo, 1, 5);
+        grid.add(new Label("Credits:"), 0, 6);
+        grid.add(creditsField, 1, 6);
+        grid.add(new Label("Capacity:"), 0, 7);
+        grid.add(capacityField, 1, 7);
+        grid.add(new Label("Year Level:"), 0, 8);
+        grid.add(yearLevelCombo, 1, 8);
+
+        dialog.getDialogPane().setContent(grid);
+        dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+        dialog.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                // Validate course code
+                ValidationResult codeResult = ValidationUtil.validateCourseCode(codeField.getText());
+                if (!codeResult.isValid()) {
+                    showAlert("Validation Error", codeResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate course title
+                ValidationResult titleResult = ValidationUtil.validateCourseTitle(titleField.getText());
+                if (!titleResult.isValid()) {
+                    showAlert("Validation Error", titleResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate description
+                ValidationResult descResult = ValidationUtil.validateRequired(descField.getText(), "Course description");
+                if (!descResult.isValid()) {
+                    showAlert("Validation Error", descResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate department selection
+                Department dept = deptCombo.getValue();
+                if (dept == null) {
+                    showAlert("Validation Error", "Please select a department");
+                    return;
+                }
+                
+                // Validate semester selection
+                Semester semester = semesterCombo.getValue();
+                if (semester == null) {
+                    showAlert("Validation Error", "Please select a semester");
+                    return;
+                }
+                
+                // Validate credits
+                ValidationResult creditsResult = ValidationUtil.validateCredits(creditsField.getText());
+                if (!creditsResult.isValid()) {
+                    showAlert("Validation Error", creditsResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate capacity
+                ValidationResult capacityResult = ValidationUtil.validateCapacity(capacityField.getText());
+                if (!capacityResult.isValid()) {
+                    showAlert("Validation Error", capacityResult.getErrorMessage());
+                    return;
+                }
+                
+                // Validate year level
+                Integer yearLevel = yearLevelCombo.getValue();
+                ValidationResult yearResult = ValidationUtil.validateYearLevel(yearLevel);
+                if (!yearResult.isValid()) {
+                    showAlert("Validation Error", yearResult.getErrorMessage());
+                    return;
+                }
+                
+                try {
+                    String code = codeResult.getStringValue();
+                    String title = titleResult.getStringValue();
+                    String desc = descResult.getStringValue();
+                    Instructor instr = instrCombo.getValue();
+                    int credits = creditsResult.getIntValue();
+                    int capacity = capacityResult.getIntValue();
+
+                    courseDao.updateCourse(course.getId(), code, title, desc, dept.getId(),
+                                          instr != null ? instr.getId() : null,
+                                          credits, capacity, semester.getId(), yearLevel);
+                    refreshTableRows();
+                    
+                    Alert success = new Alert(Alert.AlertType.INFORMATION);
+                    success.setTitle("Success");
+                    success.setContentText("Course updated successfully!");
+                    success.showAndWait();
+                } catch (SQLException e) {
+                    showAlert("Database Error", "Failed to update course: " + e.getMessage());
+                }
+            }
+        });
     }
 
     private void deleteCourse(CourseV2 course) {
